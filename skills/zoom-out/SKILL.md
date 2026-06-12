@@ -1,3 +1,8 @@
+---
+name: zoom-out
+description: Use when entering an unfamiliar code area or when broader structure, dependencies, and data flow need explanation.
+---
+
 # Zoom Out
 
 Broader context for unfamiliar code. Use when you have been dropped into a section of the codebase you do not understand, or when a task requires understanding how pieces fit together.

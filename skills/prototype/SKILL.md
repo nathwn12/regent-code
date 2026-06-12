@@ -1,3 +1,8 @@
+---
+name: prototype
+description: Use when design is unknown, the user wants a prototype, or a throwaway experiment should answer a logic or UI question.
+---
+
 # Prototype
 
 Throwaway code that answers a question before you commit to building the real thing.

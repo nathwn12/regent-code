@@ -1,3 +1,8 @@
+---
+name: tdd
+description: Use when writing production code, fixing bugs, refactoring, or when the user requests TDD or red-green-refactor.
+---
+
 # TDD
 
 Test-driven development for AutoPowers. Applies to any feature implementation, refactoring, or bugfix that involves production code.

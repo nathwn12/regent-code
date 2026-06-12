@@ -1,3 +1,8 @@
+---
+name: subagent-driven-development
+description: Use for complex multi-step implementation plans that should be executed through fresh subagents and independent reviews.
+---
+
 # Subagent-Driven Development
 
 Execution pattern for complex multi-step tasks. One fresh subagent per task, followed by two-stage review. Preferred over inline execution for any plan with 3+ tasks.

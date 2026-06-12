@@ -1,3 +1,8 @@
+---
+name: verification-before-completion
+description: Use before claiming work is done, fixed, ready, passing, complete, or successful; requires fresh verification evidence.
+---
+
 # Verification Before Completion
 
 Evidence gate for AutoPowers. Apply before any claim of completion, success, or readiness to proceed.

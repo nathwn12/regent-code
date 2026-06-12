@@ -1,3 +1,8 @@
+---
+name: orchestrator
+description: Use when the user states a goal and Regent should run clarify, plan, execute, verify, and report.
+---
+
 # Orchestrator
 
 The AutoPowers orchestration engine. Runs a 5-phase pipeline that takes a stated goal and produces shipped, verified work. Each phase has a gate: do not proceed without passing it.

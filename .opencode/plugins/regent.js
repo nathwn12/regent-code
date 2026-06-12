@@ -28,12 +28,81 @@ tool.schema = {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const skillsDir = path.resolve(__dirname, '../../skills');
+const commandsDir = path.resolve(__dirname, '../commands');
+const agentsDir = path.resolve(__dirname, '../agent');
 
 // ── Frontmatter extraction ──────────────────────────────────
+const parseFrontmatter = (content) => {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!match) return {};
+
+  const result = {};
+  for (const line of match[1].split(/\r?\n/)) {
+    const parsed = line.match(/^(\w+):\s*(.*)$/);
+    if (!parsed) continue;
+
+    let value = parsed[2].trim();
+    if (value === 'true') value = true;
+    else if (value === 'false') value = false;
+    else if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    result[parsed[1]] = value;
+  }
+  return result;
+};
+
 const extractContent = (content) => {
-  const match = content.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/);
+  const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/);
   return match ? match[1] : content;
 };
+
+const readMarkdownAssets = (dir) => {
+  try {
+    return fs.readdirSync(dir, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+      .map((entry) => {
+        const filePath = path.join(dir, entry.name);
+        const raw = fs.readFileSync(filePath, 'utf8');
+        return {
+          name: entry.name.slice(0, -3),
+          frontmatter: parseFrontmatter(raw),
+          body: extractContent(raw).trim(),
+        };
+      });
+  } catch {
+    return [];
+  }
+};
+
+const discoverBundledCommands = () => readMarkdownAssets(commandsDir)
+  .filter((command) => command.body)
+  .map((command) => ({
+    name: command.name,
+    config: {
+      description: command.frontmatter.description || command.name.replace(/-/g, ' '),
+      template: command.body,
+      ...(typeof command.frontmatter.subtask === 'boolean' ? { subtask: command.frontmatter.subtask } : {}),
+      ...(typeof command.frontmatter.agent === 'string' ? { agent: command.frontmatter.agent } : {}),
+      ...(typeof command.frontmatter.model === 'string' ? { model: command.frontmatter.model } : {}),
+      ...(typeof command.frontmatter.variant === 'string' ? { variant: command.frontmatter.variant } : {}),
+    },
+  }));
+
+const discoverBundledAgents = () => readMarkdownAssets(agentsDir)
+  .filter((agent) => agent.body && agent.frontmatter.description)
+  .map((agent) => ({
+    name: agent.name,
+    config: {
+      description: agent.frontmatter.description,
+      mode: agent.frontmatter.mode || 'subagent',
+      prompt: agent.body,
+      ...(typeof agent.frontmatter.model === 'string' ? { model: agent.frontmatter.model } : {}),
+      ...(typeof agent.frontmatter.variant === 'string' ? { variant: agent.frontmatter.variant } : {}),
+      ...(typeof agent.frontmatter.color === 'string' ? { color: agent.frontmatter.color } : {}),
+      ...(typeof agent.frontmatter.hidden === 'boolean' ? { hidden: agent.frontmatter.hidden } : {}),
+    },
+  }));
 
 // ── Bootstrap cache ──────────────────────────────────────────
 let bootstrapCache;
@@ -140,6 +209,20 @@ export const RegentPlugin = async ({ client }) => {
       config.skills.paths = config.skills.paths || [];
       if (!config.skills.paths.includes(skillsDir)) {
         config.skills.paths.push(skillsDir);
+      }
+
+      config.command = config.command || {};
+      for (const command of discoverBundledCommands()) {
+        if (!config.command[command.name]) {
+          config.command[command.name] = command.config;
+        }
+      }
+
+      config.agent = config.agent || {};
+      for (const agent of discoverBundledAgents()) {
+        if (!config.agent[agent.name]) {
+          config.agent[agent.name] = agent.config;
+        }
       }
     },
 

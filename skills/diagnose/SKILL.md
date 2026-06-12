@@ -1,3 +1,8 @@
+---
+name: diagnose
+description: Use when the user reports a bug, failure, unexpected behavior, flaky behavior, or performance regression.
+---
+
 # Diagnose
 
 Systematic debugging for AutoPowers. For hard bugs, performance regressions, and any unexpected behavior.

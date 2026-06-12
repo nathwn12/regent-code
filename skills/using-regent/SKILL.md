@@ -1,3 +1,8 @@
+---
+name: using-regent
+description: Regent bootstrap instructions for AutoPowers; use when explaining or debugging Regent orchestration behavior.
+---
+
 # AutoPowers
 
 AutoPowers is the orchestrator layer for OpenCode. It gives you tools, skills, commands, and disciplined workflows that turn intent into shipped code with zero ceremony.
