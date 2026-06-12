@@ -1,30 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-
-// Minimal @opencode-ai/plugin shim — zero dependencies
-const tool = (def) => def;
-tool.schema = {
-  string: () => {
-    const s = (() => {});
-    s._meta = { type: 'string', optional: false, description: '' };
-    s.describe = (d) => { s._meta.description = d; return s; };
-    s.optional = () => { s._meta.optional = true; return s; };
-    return s;
-  },
-  array: (itemSchema) => {
-    const a = (() => {});
-    a._meta = { type: 'array', description: '', items: itemSchema };
-    a.describe = (d) => { a._meta.description = d; return a; };
-    return a;
-  },
-  object: (shape) => {
-    const o = (() => {});
-    o._meta = { type: 'object', description: '', properties: shape };
-    o.describe = (d) => { o._meta.description = d; return o; };
-    return o;
-  },
-};
+import { tool } from '@opencode-ai/plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const skillsDir = path.resolve(__dirname, '../../skills');
@@ -118,28 +95,21 @@ const getBootstrap = () => {
 
   const content = extractContent(fs.readFileSync(skillPath, 'utf8'));
 
-  const toolMap = `**Tool Mapping for OpenCode:**
-- \`TodoWrite\` → \`todowrite\`
-- \`Task\` with subagents → \`task\` tool
-- \`Read\`, \`Write\`, \`Edit\`, \`Bash\` → Your native tools
-
-Use OpenCode's native \`skill\` tool to list and load skills.`;
-
   bootstrapCache = `<EXTREMELY_IMPORTANT>
 ${content}
-
-${toolMap}
 </EXTREMELY_IMPORTANT>`;
 
   return bootstrapCache;
 };
 
 // ── Shared subagent dispatch ─────────────────────────────────
-async function dispatchSubagent(client, task, context, expectedOutput) {
+async function dispatchSubagent(client, task, context, expectedOutput, toolContext = {}) {
   try {
-    const session = await client.session.create({
+    const sessionResult = await client.session.create({
+      ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
       body: { title: `regent: ${task.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 60)}` },
     });
+    const session = sessionResult.data ?? sessionResult;
 
     const prompt = [
       `## Task`,
@@ -162,18 +132,23 @@ async function dispatchSubagent(client, task, context, expectedOutput) {
 
     const result = await client.session.prompt({
       path: { id: session.id },
+      ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
       body: {
         parts: [{ type: 'text', text: prompt }],
       },
     });
+    const message = result.data ?? result;
 
-    const responseText = result.parts
+    const responseText = message.parts
       ?.filter(p => p.type === 'text')
       .map(p => p.text)
       .filter(Boolean)
       .join('\n') || '';
 
-    await client.session.delete({ path: { id: session.id } });
+    await client.session.delete({
+      path: { id: session.id },
+      ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
+    });
 
     let status = 'done';
     let output = responseText;
@@ -260,8 +235,8 @@ export const RegentPlugin = async ({ client }) => {
           context: tool.schema.string().describe('Background context: files, architecture, decisions, constraints'),
           expected_output: tool.schema.string().describe('What done looks like: file list, test output, decision'),
         },
-        async execute(args) {
-          const result = await dispatchSubagent(client, args.task, args.context, args.expected_output);
+        async execute(args, context) {
+          const result = await dispatchSubagent(client, args.task, args.context, args.expected_output, context);
           return JSON.stringify(result);
         },
       }),
@@ -277,9 +252,9 @@ export const RegentPlugin = async ({ client }) => {
             expected_output: tool.schema.string().describe('What done looks like for this task'),
           })).describe('Array of independent tasks to run in parallel'),
         },
-        async execute(args) {
+        async execute(args, context) {
           const results = await Promise.all(args.tasks.map(async (t) => {
-            const result = await dispatchSubagent(client, t.task, t.context, t.expected_output);
+            const result = await dispatchSubagent(client, t.task, t.context, t.expected_output, context);
             return { id: t.id, ...result };
           }));
 
@@ -305,11 +280,11 @@ export const RegentPlugin = async ({ client }) => {
             scope: tool.schema.string().optional().describe('Optional narrowing scope'),
           })).describe('Questions to research in parallel'),
         },
-        async execute(args) {
+        async execute(args, context) {
           const results = await Promise.all(args.questions.map(async (q) => {
             const task = `Research this question thoroughly:\n${q.question}`;
-            const context = q.scope ? `Scope: ${q.scope}` : 'Be thorough and concise. Return key findings, data points, and sources.';
-            const result = await dispatchSubagent(client, task, context, 'Key findings, data points, sources, and recommendations');
+            const taskContext = q.scope ? `Scope: ${q.scope}` : 'Be thorough and concise. Return key findings, data points, and sources.';
+            const result = await dispatchSubagent(client, task, taskContext, 'Key findings, data points, sources, and recommendations', context);
             return { id: q.id, question: q.question, ...result };
           }));
 
@@ -327,8 +302,8 @@ export const RegentPlugin = async ({ client }) => {
           query: tool.schema.string().describe('What to understand: "project structure", "API routes", "database schema", "component tree"'),
           focus: tool.schema.string().optional().describe('Optional narrowing: directory path, file pattern, or topic'),
         },
-        async execute(args) {
-          const worktree = process.cwd();
+        async execute(args, context) {
+          const worktree = context?.worktree || context?.directory || process.cwd();
           let result = `Codebase exploration for: ${args.query}\n\n`;
 
           // Top-level listing
@@ -396,6 +371,16 @@ export const RegentPlugin = async ({ client }) => {
           implementation_context: tool.schema.string().describe('What was built: file list, summary of changes, or diff'),
         },
         async execute(args) {
+          if (!args?.requirements || !args?.implementation_context) {
+            return JSON.stringify({
+              compliant: false,
+              requirements_met: [],
+              requirements_unmet: [],
+              extras_built: [],
+              summary: 'Missing required arguments: provide "requirements" and "implementation_context"',
+            });
+          }
+
           const stripCheckbox = (s) => s.replace(/^[-*]\s*\[\s*[x ]?\s*\]\s*/i, '').replace(/^[-*\d+.]\s+/, '').trim();
 
           const reqs = args.requirements.split('\n')

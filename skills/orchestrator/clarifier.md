@@ -8,7 +8,7 @@ Before asking any questions, understand what exists:
 - Read `CONTEXT.md`, `docs/adr/`, `UBIQUITOUS_LANGUAGE.md` for domain vocabulary
 - Read `README.md`, `package.json`, recent commits for project state
 - Run `explore(query="project structure")` for codebase layout
-- Run `research([{question: "existing patterns for similar features"}])` if relevant
+- Run `research({ questions: [{ id: "patterns", question: "existing patterns for similar features" }] })` if relevant
 
 ## 2. Assess scope
 

@@ -48,11 +48,11 @@ When loading multiple skills: **process skills first** (orchestrator, diagnose, 
 
 | Tool | What It Does | When |
 |------|-------------|------|
-| `delegate(task, context, expected_output)` | Single focused subagent | Well-defined independent task |
-| `delegate_many([{id, task, context, expected_output}])` | Parallel subagents | Multiple independent tasks |
-| `research([{id, question, scope?}])` | Parallel research agents | Need information from multiple angles |
-| `explore(query, focus?)` | Codebase analysis | Need to understand project structure |
-| `verify(requirements, implementation_context)` | Compliance check | Need to confirm work meets requirements |
+| `delegate({ task, context, expected_output })` | Single focused subagent | Well-defined independent task |
+| `delegate_many({ tasks: [{ id, task, context, expected_output }] })` | Parallel subagents | Multiple independent tasks |
+| `research({ questions: [{ id, question, scope? }] })` | Parallel research agents | Need information from multiple angles |
+| `explore({ query, focus? })` | Codebase analysis | Need to understand project structure |
+| `verify({ requirements, implementation_context })` | Compliance check | Need to confirm work meets requirements |
 
 ## Command Catalog
 

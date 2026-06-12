@@ -32,7 +32,7 @@ Present 2-3 options for what to do next. Include your recommendation and why. Ex
 
 - **New goal** → loop to Phase 1
 - **Fix issues** → loop to Phase 3 (execute)
-- **Done** → finishing-a-development-branch skill
+- **Done** → ask whether the user wants to commit or open a PR
 
 ## Wait for input
 

@@ -61,3 +61,85 @@ test('bundled Regent skills have OpenCode-discoverable frontmatter', () => {
     assert.match(content, /\ndescription: .+\n/);
   }
 });
+
+test('custom tool args are OpenCode-compatible Zod schemas', async () => {
+  const plugin = await RegentPlugin({ client: {} });
+
+  for (const [name, definition] of Object.entries(plugin.tool)) {
+    for (const [argName, schema] of Object.entries(definition.args)) {
+      assert.equal(typeof schema.safeParse, 'function', `${name}.${argName} should be a Zod schema`);
+    }
+  }
+});
+
+test('delegate handles wrapped SDK responses', async () => {
+  const calls = [];
+  const plugin = await RegentPlugin({
+    client: {
+      session: {
+        async create(input) {
+          calls.push(['create', input]);
+          return { data: { id: 'session-1' } };
+        },
+        async prompt(input) {
+          calls.push(['prompt', input]);
+          return { data: { parts: [{ type: 'text', text: 'Completed task' }] } };
+        },
+        async delete(input) {
+          calls.push(['delete', input]);
+          return { data: {} };
+        },
+      },
+    },
+  });
+
+  const output = JSON.parse(await plugin.tool.delegate.execute({
+    task: 'Check dispatch',
+    context: 'Use fake SDK',
+    expected_output: 'Structured result',
+  }, { directory: repoRoot, worktree: repoRoot }));
+
+  assert.equal(output.status, 'done');
+  assert.match(output.output, /Completed task/);
+  assert.equal(calls[1][1].path.id, 'session-1');
+  assert.equal(calls[2][1].path.id, 'session-1');
+});
+
+test('explore uses OpenCode worktree context when provided', async () => {
+  const plugin = await RegentPlugin({ client: {} });
+
+  const output = JSON.parse(await plugin.tool.explore.execute({
+    query: 'package metadata',
+    focus: 'package.json',
+  }, { worktree: repoRoot }));
+
+  assert.match(output.structure, /"name": "regent"/);
+});
+
+test('bootstrap keeps using-regent as the single tool mapping source', async () => {
+  const plugin = await RegentPlugin({ client: {} });
+  const output = {
+    messages: [{
+      info: { role: 'user' },
+      parts: [{ type: 'text', text: 'Do work' }],
+    }],
+  };
+
+  await plugin['experimental.chat.messages.transform']({}, output);
+
+  const bootstrap = output.messages[0].parts[0].text;
+  assert.match(bootstrap, /EXTREMELY_IMPORTANT/);
+  assert.doesNotMatch(bootstrap, /`Task` with subagents → `task` tool/);
+});
+
+test('verify returns structured error on missing args', async () => {
+  const plugin = await RegentPlugin({ client: {} });
+
+  const bare = JSON.parse(await plugin.tool.verify.execute());
+  assert.equal(bare.compliant, false);
+  assert.match(bare.summary, /Missing required arguments/);
+
+  const partial = JSON.parse(await plugin.tool.verify.execute({ requirements: 'req' }));
+  assert.equal(partial.compliant, false);
+  assert.match(partial.summary, /Missing required arguments/);
+});

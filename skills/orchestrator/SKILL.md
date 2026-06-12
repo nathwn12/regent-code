@@ -66,6 +66,8 @@ Decision tree:
 
 Use `delegate()` to dispatch verifiers for each requirement if the scope is large.
 
+`verify()` checks spec compliance; fresh command output, repro evidence, or inspection evidence is still required before Phase 5.
+
 **Gate:** Fresh verification evidence required before Phase 5.
 
 ### Phase 5 — Report & Loop

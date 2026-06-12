@@ -6,6 +6,9 @@
   "main": ".opencode/plugins/regent.js",
   "license": "MIT",
   "author": "nathwn12",
+  "dependencies": {
+    "@opencode-ai/plugin": "latest"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nathwn12/regent.git"

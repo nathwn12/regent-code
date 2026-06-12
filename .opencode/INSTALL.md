@@ -4,17 +4,23 @@
 
 ```jsonc
 {
-  "plugin": "regent@git+https://github.com/nathwn12/regent.git"
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["regent@git+https://github.com/nathwn12/regent.git#v2.1.0"]
 }
 ```
 
-## Pin a version
+## Use Latest Branch
 
 ```jsonc
 {
-  "plugin": "regent@git+https://github.com/nathwn12/regent.git#v2.1.0"
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["regent@git+https://github.com/nathwn12/regent.git"]
 }
 ```
+
+The pinned version is recommended. Use the unpinned branch only when you intentionally want the latest changes.
+
+Requires an OpenCode version that supports git plugin specs. If plugin loading fails, use the troubleshooting checks below and report your OpenCode version.
 
 ## Verify
 

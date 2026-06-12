@@ -36,7 +36,7 @@ Possible implementer statuses:
 
 | Status | Meaning | Action |
 |--------|---------|--------|
-| `done` | Implemented, tested, verified, committed | Proceed to review |
+| `done` | Implemented, tested, verified | Proceed to review |
 | `done_with_concerns` | Implemented but has reservations | Note concerns, proceed to review |
 | `needs_context` | Missing information to proceed | Provide context, re-dispatch |
 | `blocked` | Cannot proceed due to external blocker | PAUSE, escalate to user |
@@ -64,7 +64,7 @@ Check:
 
 When all tasks complete their review loops:
 1. Dispatch a final code review (standards + spec alignment)
-2. Use the finishing-a-development-branch skill for integration
+2. Ask the user whether they want to commit or open a PR
 
 ## Red flags
 

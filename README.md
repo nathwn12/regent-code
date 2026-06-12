@@ -2,7 +2,7 @@
 
 **Agent orchestration for OpenCode. From idea to shipped — zero ceremony.**
 
-AutoPowers transforms OpenCode into a disciplined development platform. Every session is bootstrapped with the right tools, skills, and commands — auto-discovered, auto-activated, auto-piloted.
+AutoPowers transforms OpenCode into a disciplined development platform. Every session is bootstrapped with instructions, tools, skills, and commands so the agent routes goals through disciplined workflows.
 
 ## How it works
 
@@ -51,19 +51,23 @@ Add to your project's `opencode.jsonc`:
 
 ```jsonc
 {
-  "plugin": "regent@git+https://github.com/nathwn12/regent.git"
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["regent@git+https://github.com/nathwn12/regent.git#v2.1.0"]
 }
 ```
 
-Pin a version:
+Use the unpinned branch only when you intentionally want the latest changes:
 
 ```jsonc
 {
-  "plugin": "regent@git+https://github.com/nathwn12/regent.git#v2.1.0"
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["regent@git+https://github.com/nathwn12/regent.git"]
 }
 ```
 
-Zero npm. Zero config. Clone and go. AutoPowers auto-injects into every session.
+Requires an OpenCode version that supports git plugin specs. If plugin loading fails, use the troubleshooting checks in `.opencode/INSTALL.md` and report your OpenCode version.
+
+One plugin entry. No manual npm install. AutoPowers injects after OpenCode loads the plugin.
 
 ## Principles
 
@@ -71,4 +75,4 @@ Zero npm. Zero config. Clone and go. AutoPowers auto-injects into every session.
 - **Goal-locked.** Do not drift. Every action traces back to a stated goal.
 - **Evidence before claims.** Fresh verification or it did not happen.
 - **Human at decision points.** Design approval, plan approval, blockers — gates where the user decides.
-- **Zero ceremony.** One command to start. One file to install. No config.
+- **Zero ceremony.** One command to start. One plugin entry. No manual setup.
