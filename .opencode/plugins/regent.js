@@ -21,7 +21,10 @@ const parseFrontmatter = (content) => {
     let value = parsed[2].trim();
     if (value === 'true') value = true;
     else if (value === 'false') value = false;
-    else if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+    else if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
       value = value.slice(1, -1);
     }
     result[parsed[1]] = value;
@@ -36,7 +39,8 @@ const extractContent = (content) => {
 
 const readMarkdownAssets = (dir) => {
   try {
-    return fs.readdirSync(dir, { withFileTypes: true })
+    return fs
+      .readdirSync(dir, { withFileTypes: true })
       .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
       .map((entry) => {
         const filePath = path.join(dir, entry.name);
@@ -52,34 +56,48 @@ const readMarkdownAssets = (dir) => {
   }
 };
 
-const discoverBundledCommands = () => readMarkdownAssets(commandsDir)
-  .filter((command) => command.body)
-  .map((command) => ({
-    name: command.name,
-    config: {
-      description: command.frontmatter.description || command.name.replace(/-/g, ' '),
-      template: command.body,
-      ...(typeof command.frontmatter.subtask === 'boolean' ? { subtask: command.frontmatter.subtask } : {}),
-      ...(typeof command.frontmatter.agent === 'string' ? { agent: command.frontmatter.agent } : {}),
-      ...(typeof command.frontmatter.model === 'string' ? { model: command.frontmatter.model } : {}),
-      ...(typeof command.frontmatter.variant === 'string' ? { variant: command.frontmatter.variant } : {}),
-    },
-  }));
+const discoverBundledCommands = () =>
+  readMarkdownAssets(commandsDir)
+    .filter((command) => command.body)
+    .map((command) => ({
+      name: command.name,
+      config: {
+        description: command.frontmatter.description || command.name.replace(/-/g, ' '),
+        template: command.body,
+        ...(typeof command.frontmatter.subtask === 'boolean'
+          ? { subtask: command.frontmatter.subtask }
+          : {}),
+        ...(typeof command.frontmatter.agent === 'string'
+          ? { agent: command.frontmatter.agent }
+          : {}),
+        ...(typeof command.frontmatter.model === 'string'
+          ? { model: command.frontmatter.model }
+          : {}),
+        ...(typeof command.frontmatter.variant === 'string'
+          ? { variant: command.frontmatter.variant }
+          : {}),
+      },
+    }));
 
-const discoverBundledAgents = () => readMarkdownAssets(agentsDir)
-  .filter((agent) => agent.body && agent.frontmatter.description)
-  .map((agent) => ({
-    name: agent.name,
-    config: {
-      description: agent.frontmatter.description,
-      mode: agent.frontmatter.mode || 'subagent',
-      prompt: agent.body,
-      ...(typeof agent.frontmatter.model === 'string' ? { model: agent.frontmatter.model } : {}),
-      ...(typeof agent.frontmatter.variant === 'string' ? { variant: agent.frontmatter.variant } : {}),
-      ...(typeof agent.frontmatter.color === 'string' ? { color: agent.frontmatter.color } : {}),
-      ...(typeof agent.frontmatter.hidden === 'boolean' ? { hidden: agent.frontmatter.hidden } : {}),
-    },
-  }));
+const discoverBundledAgents = () =>
+  readMarkdownAssets(agentsDir)
+    .filter((agent) => agent.body && agent.frontmatter.description)
+    .map((agent) => ({
+      name: agent.name,
+      config: {
+        description: agent.frontmatter.description,
+        mode: agent.frontmatter.mode || 'subagent',
+        prompt: agent.body,
+        ...(typeof agent.frontmatter.model === 'string' ? { model: agent.frontmatter.model } : {}),
+        ...(typeof agent.frontmatter.variant === 'string'
+          ? { variant: agent.frontmatter.variant }
+          : {}),
+        ...(typeof agent.frontmatter.color === 'string' ? { color: agent.frontmatter.color } : {}),
+        ...(typeof agent.frontmatter.hidden === 'boolean'
+          ? { hidden: agent.frontmatter.hidden }
+          : {}),
+      },
+    }));
 
 // ── Bootstrap cache ──────────────────────────────────────────
 let bootstrapCache;
@@ -139,11 +157,12 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
     });
     const message = result.data ?? result;
 
-    const responseText = message.parts
-      ?.filter(p => p.type === 'text')
-      .map(p => p.text)
-      .filter(Boolean)
-      .join('\n') || '';
+    const responseText =
+      message.parts
+        ?.filter((p) => p.type === 'text')
+        .map((p) => p.text)
+        .filter(Boolean)
+        .join('\n') || '';
 
     await client.session.delete({
       path: { id: session.id },
@@ -160,13 +179,19 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
       status = 'needs_context';
     } else if (responseText.includes('CONCERN:')) {
       status = 'done_with_concerns';
-      concerns = responseText.match(/CONCERN:.*$/gm)?.map(c => c.replace('CONCERN:', '').trim()) || [];
+      concerns =
+        responseText.match(/CONCERN:.*$/gm)?.map((c) => c.replace('CONCERN:', '').trim()) || [];
     }
 
-    const filesChanged = responseText.match(/(?:^|\n)(?:[\w.\-/\\]+\.[a-zA-Z0-9]+)/gm)
-      ?.map(f => f.trim())
-      .filter(f => !f.startsWith('CONCERN:') && !f.startsWith('NEEDS_CONTEXT') && !f.startsWith('BLOCKED'))
-      .slice(0, 20) || [];
+    const filesChanged =
+      responseText
+        .match(/(?:^|\n)(?:[\w.\-/\\]+\.[a-zA-Z0-9]+)/gm)
+        ?.map((f) => f.trim())
+        .filter(
+          (f) =>
+            !f.startsWith('CONCERN:') && !f.startsWith('NEEDS_CONTEXT') && !f.startsWith('BLOCKED'),
+        )
+        .slice(0, 20) || [];
 
     return { status, output, concerns, files_changed: filesChanged };
   } catch (err) {
@@ -177,7 +202,6 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
 // ── Plugin export ────────────────────────────────────────────
 export const RegentPlugin = async ({ client }) => {
   return {
-
     // Register skills path so OpenCode discovers regent skills
     config: async (config) => {
       config.skills = config.skills || {};
@@ -206,14 +230,14 @@ export const RegentPlugin = async ({ client }) => {
       const bootstrap = getBootstrap();
       if (!bootstrap || !output.messages.length) return;
 
-      const firstUser = output.messages.find(m => m.info?.role === 'user');
+      const firstUser = output.messages.find((m) => m.info?.role === 'user');
       if (!firstUser?.parts?.length) return;
 
       // Guard: skip if any text part at any position already has the marker
       const allText = output.messages
-        .flatMap(m => m.parts || [])
-        .filter(p => p.type === 'text')
-        .map(p => p.text)
+        .flatMap((m) => m.parts || [])
+        .filter((p) => p.type === 'text')
+        .map((p) => p.text)
         .join('');
       if (allText.includes('EXTREMELY_IMPORTANT')) return;
 
@@ -226,45 +250,72 @@ export const RegentPlugin = async ({ client }) => {
 
     // ── 5 Custom Tools ──────────────────────────────────────
     tool: {
-
       // 1. delegate — single subagent
       delegate: tool({
-        description: 'Dispatch a single focused task to a subagent. Returns structured result with status (done, blocked, needs_context). Use when a task is well-defined and self-contained.',
+        description:
+          'Dispatch a single focused task to a subagent. Returns structured result with status (done, blocked, needs_context). Use when a task is well-defined and self-contained.',
         args: {
           task: tool.schema.string().describe('The specific task for the subagent to complete'),
-          context: tool.schema.string().describe('Background context: files, architecture, decisions, constraints'),
-          expected_output: tool.schema.string().describe('What done looks like: file list, test output, decision'),
+          context: tool.schema
+            .string()
+            .describe('Background context: files, architecture, decisions, constraints'),
+          expected_output: tool.schema
+            .string()
+            .describe('What done looks like: file list, test output, decision'),
         },
         async execute(args, context) {
-          const result = await dispatchSubagent(client, args.task, args.context, args.expected_output, context);
+          const result = await dispatchSubagent(
+            client,
+            args.task,
+            args.context,
+            args.expected_output,
+            context,
+          );
           return JSON.stringify(result);
         },
       }),
 
       // 2. delegate_many — parallel multi-subagent
       delegate_many: tool({
-        description: 'Dispatch multiple independent tasks to subagents in PARALLEL. All tasks run simultaneously via Promise.all. Use for tasks that have no dependencies on each other.',
+        description:
+          'Dispatch multiple independent tasks to subagents in PARALLEL. All tasks run simultaneously via Promise.all. Use for tasks that have no dependencies on each other.',
         args: {
-          tasks: tool.schema.array(tool.schema.object({
-            id: tool.schema.string().describe('Unique identifier for this task'),
-            task: tool.schema.string().describe('What this subagent should do'),
-            context: tool.schema.string().describe('Background context for this task'),
-            expected_output: tool.schema.string().describe('What done looks like for this task'),
-          })).describe('Array of independent tasks to run in parallel'),
+          tasks: tool.schema
+            .array(
+              tool.schema.object({
+                id: tool.schema.string().describe('Unique identifier for this task'),
+                task: tool.schema.string().describe('What this subagent should do'),
+                context: tool.schema.string().describe('Background context for this task'),
+                expected_output: tool.schema
+                  .string()
+                  .describe('What done looks like for this task'),
+              }),
+            )
+            .describe('Array of independent tasks to run in parallel'),
         },
         async execute(args, context) {
-          const results = await Promise.all(args.tasks.map(async (t) => {
-            const result = await dispatchSubagent(client, t.task, t.context, t.expected_output, context);
-            return { id: t.id, ...result };
-          }));
+          const results = await Promise.all(
+            args.tasks.map(async (t) => {
+              const result = await dispatchSubagent(
+                client,
+                t.task,
+                t.context,
+                t.expected_output,
+                context,
+              );
+              return { id: t.id, ...result };
+            }),
+          );
 
           return JSON.stringify({
             results,
             summary: {
               total: results.length,
-              completed: results.filter(r => r.status === 'done' || r.status === 'done_with_concerns').length,
-              failed: results.filter(r => r.status === 'blocked').length,
-              needs_context: results.filter(r => r.status === 'needs_context').length,
+              completed: results.filter(
+                (r) => r.status === 'done' || r.status === 'done_with_concerns',
+              ).length,
+              failed: results.filter((r) => r.status === 'blocked').length,
+              needs_context: results.filter((r) => r.status === 'needs_context').length,
             },
           });
         },
@@ -272,21 +323,36 @@ export const RegentPlugin = async ({ client }) => {
 
       // 3. research — parallel research
       research: tool({
-        description: 'Research multiple questions in parallel by dispatching independent research subagents. Each question gets a focused agent. Returns combined findings with synthesis.',
+        description:
+          'Research multiple questions in parallel by dispatching independent research subagents. Each question gets a focused agent. Returns combined findings with synthesis.',
         args: {
-          questions: tool.schema.array(tool.schema.object({
-            id: tool.schema.string().describe('Unique identifier'),
-            question: tool.schema.string().describe('The question to research'),
-            scope: tool.schema.string().optional().describe('Optional narrowing scope'),
-          })).describe('Questions to research in parallel'),
+          questions: tool.schema
+            .array(
+              tool.schema.object({
+                id: tool.schema.string().describe('Unique identifier'),
+                question: tool.schema.string().describe('The question to research'),
+                scope: tool.schema.string().optional().describe('Optional narrowing scope'),
+              }),
+            )
+            .describe('Questions to research in parallel'),
         },
         async execute(args, context) {
-          const results = await Promise.all(args.questions.map(async (q) => {
-            const task = `Research this question thoroughly:\n${q.question}`;
-            const taskContext = q.scope ? `Scope: ${q.scope}` : 'Be thorough and concise. Return key findings, data points, and sources.';
-            const result = await dispatchSubagent(client, task, taskContext, 'Key findings, data points, sources, and recommendations', context);
-            return { id: q.id, question: q.question, ...result };
-          }));
+          const results = await Promise.all(
+            args.questions.map(async (q) => {
+              const task = `Research this question thoroughly:\n${q.question}`;
+              const taskContext = q.scope
+                ? `Scope: ${q.scope}`
+                : 'Be thorough and concise. Return key findings, data points, and sources.';
+              const result = await dispatchSubagent(
+                client,
+                task,
+                taskContext,
+                'Key findings, data points, sources, and recommendations',
+                context,
+              );
+              return { id: q.id, question: q.question, ...result };
+            }),
+          );
 
           return JSON.stringify({
             findings: results,
@@ -297,10 +363,18 @@ export const RegentPlugin = async ({ client }) => {
 
       // 4. explore — codebase analysis
       explore: tool({
-        description: 'Analyze the project codebase to answer structural questions. Uses SDK file operations to understand directory layout, key files, and patterns. Call this before planning to understand what exists.',
+        description:
+          'Analyze the project codebase to answer structural questions. Uses SDK file operations to understand directory layout, key files, and patterns. Call this before planning to understand what exists.',
         args: {
-          query: tool.schema.string().describe('What to understand: "project structure", "API routes", "database schema", "component tree"'),
-          focus: tool.schema.string().optional().describe('Optional narrowing: directory path, file pattern, or topic'),
+          query: tool.schema
+            .string()
+            .describe(
+              'What to understand: "project structure", "API routes", "database schema", "component tree"',
+            ),
+          focus: tool.schema
+            .string()
+            .optional()
+            .describe('Optional narrowing: directory path, file pattern, or topic'),
         },
         async execute(args, context) {
           const worktree = context?.worktree || context?.directory || process.cwd();
@@ -315,7 +389,9 @@ export const RegentPlugin = async ({ client }) => {
               result += `${item.isDirectory() ? '/' : ''} ${item.name}\n`;
             }
             result += '\n';
-          } catch {}
+          } catch {
+            /* ignore read errors */
+          }
 
           // Walk src/ if it exists (up to 3 levels)
           try {
@@ -339,7 +415,9 @@ export const RegentPlugin = async ({ client }) => {
               };
               walk(srcDir, 0);
             }
-          } catch {}
+          } catch {
+            /* ignore read errors */
+          }
 
           // Focus path
           if (args.focus) {
@@ -351,8 +429,12 @@ export const RegentPlugin = async ({ client }) => {
                 const items = fs.readdirSync(focusPath);
                 result += items.join('\n') + '\n';
               } else {
-                const content = fs.readFileSync(focusPath, 'utf8').slice(0, 3000);
-                result += '```\n' + content + '\n```\n';
+                try {
+                  const content = fs.readFileSync(focusPath, 'utf8').slice(0, 3000);
+                  result += '```\n' + content + '\n```\n';
+                } catch {
+                  result += '(path not found)\n';
+                }
               }
             } else {
               result += '(path not found)\n';
@@ -365,10 +447,15 @@ export const RegentPlugin = async ({ client }) => {
 
       // 5. verify — compliance check
       verify: tool({
-        description: 'Compare implementation against requirements. Returns structured pass/fail per requirement, flags extras (YAGNI). Use after execution to check if work meets the plan.',
+        description:
+          'Compare implementation against requirements. Returns structured pass/fail per requirement, flags extras (YAGNI). Use after execution to check if work meets the plan.',
         args: {
-          requirements: tool.schema.string().describe('The spec, plan, or requirements text — line by line requirements'),
-          implementation_context: tool.schema.string().describe('What was built: file list, summary of changes, or diff'),
+          requirements: tool.schema
+            .string()
+            .describe('The spec, plan, or requirements text — line by line requirements'),
+          implementation_context: tool.schema
+            .string()
+            .describe('What was built: file list, summary of changes, or diff'),
         },
         async execute(args) {
           if (!args?.requirements || !args?.implementation_context) {
@@ -377,15 +464,21 @@ export const RegentPlugin = async ({ client }) => {
               requirements_met: [],
               requirements_unmet: [],
               extras_built: [],
-              summary: 'Missing required arguments: provide "requirements" and "implementation_context"',
+              summary:
+                'Missing required arguments: provide "requirements" and "implementation_context"',
             });
           }
 
-          const stripCheckbox = (s) => s.replace(/^[-*]\s*\[\s*[x ]?\s*\]\s*/i, '').replace(/^[-*\d+.]\s+/, '').trim();
+          const stripCheckbox = (s) =>
+            s
+              .replace(/^[-*]\s*\[\s*[x ]?\s*\]\s*/i, '')
+              .replace(/^[-*\d+.]\s+/, '')
+              .trim();
 
-          const reqs = args.requirements.split('\n')
-            .map(r => stripCheckbox(r))
-            .filter(r => r.length > 2 && !r.startsWith('#') && !r.startsWith('```'));
+          const reqs = args.requirements
+            .split('\n')
+            .map((r) => stripCheckbox(r))
+            .filter((r) => r.length > 2 && !r.startsWith('#') && !r.startsWith('```'));
 
           const impl = args.implementation_context.toLowerCase();
 
@@ -394,9 +487,9 @@ export const RegentPlugin = async ({ client }) => {
 
           for (const req of reqs) {
             const reqLower = req.toLowerCase();
-            const found = reqLower.split(/\s+/).some(word =>
-              word.length > 3 && impl.includes(word)
-            );
+            const found = reqLower
+              .split(/\s+/)
+              .some((word) => word.length > 3 && impl.includes(word));
             if (found) {
               met.push(req);
             } else {
@@ -404,15 +497,19 @@ export const RegentPlugin = async ({ client }) => {
             }
           }
 
-          const implLines = args.implementation_context.split('\n')
-            .map(l => stripCheckbox(l))
-            .filter(l => l.length > 3 && !l.startsWith('#') && !l.startsWith('```'));
+          const implLines = args.implementation_context
+            .split('\n')
+            .map((l) => stripCheckbox(l))
+            .filter((l) => l.length > 3 && !l.startsWith('#') && !l.startsWith('```'));
 
-          const extras = implLines.filter(line => {
+          const extras = implLines.filter((line) => {
             const lineLower = line.toLowerCase();
-            return !reqs.some(req => {
-              const reqWords = req.toLowerCase().split(/\s+/).filter(w => w.length > 3);
-              return reqWords.some(w => lineLower.includes(w));
+            return !reqs.some((req) => {
+              const reqWords = req
+                .toLowerCase()
+                .split(/\s+/)
+                .filter((w) => w.length > 3);
+              return reqWords.some((w) => lineLower.includes(w));
             });
           });
 
@@ -425,7 +522,6 @@ export const RegentPlugin = async ({ client }) => {
           });
         },
       }),
-
     },
   };
 };

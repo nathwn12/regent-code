@@ -18,6 +18,7 @@ Fresh means run right now, not "it was working earlier." Verification means you 
 ### 1. IDENTIFY
 
 What command proves the claim?
+
 - "Tests pass" → requires test output showing 0 failures
 - "Linter clean" → requires linter output showing 0 errors
 - "Build succeeds" → requires build command with exit code 0
@@ -35,6 +36,7 @@ Read the full output. Check the exit code. Count failures, errors, warnings, and
 ### 4. VERIFY
 
 Does the output confirm the claim?
+
 - Tests: "Tests: 12 passed, 0 failed" → verified
 - Linter: "No errors found" → verified
 - Build: exit code 0 → verified
@@ -45,32 +47,32 @@ Only now may you say it works, it's done, or proceed to the next step.
 
 ## Common Failures
 
-| Claim | Required Evidence | Not Sufficient |
-|-------|-------------------|----------------|
-| Tests pass | Full test output: "X passed, 0 failed" | "All tests should pass now" |
-| Linter clean | Linter output: "0 errors, 0 warnings" | "I fixed the lint issues" |
-| Build succeeds | Build command exit code 0 | "Build was working earlier" |
-| Bug fixed | Original repro scenario passes | "I changed the relevant code" |
-| Feature complete | Acceptance criteria met, one by one | "I implemented the main parts" |
-| Coverage sufficient | Coverage report above threshold | "I added tests for the new code" |
+| Claim               | Required Evidence                      | Not Sufficient                   |
+| ------------------- | -------------------------------------- | -------------------------------- |
+| Tests pass          | Full test output: "X passed, 0 failed" | "All tests should pass now"      |
+| Linter clean        | Linter output: "0 errors, 0 warnings"  | "I fixed the lint issues"        |
+| Build succeeds      | Build command exit code 0              | "Build was working earlier"      |
+| Bug fixed           | Original repro scenario passes         | "I changed the relevant code"    |
+| Feature complete    | Acceptance criteria met, one by one    | "I implemented the main parts"   |
+| Coverage sufficient | Coverage report above threshold        | "I added tests for the new code" |
 
 ## Red Flags
 
-| Says | Actually Means |
-|------|---------------|
-| "should pass now" | Not verified |
-| "probably works" | Not verified |
-| "seems correct" | Not verified |
-| "I think it's fixed" | Not verified |
-| "it was working before" | Not fresh evidence |
-| "the tests look right" | Not run |
-| "the change is trivial" | Most likely to break something |
-| "just this once" | The exception that proves the rule |
+| Says                    | Actually Means                     |
+| ----------------------- | ---------------------------------- |
+| "should pass now"       | Not verified                       |
+| "probably works"        | Not verified                       |
+| "seems correct"         | Not verified                       |
+| "I think it's fixed"    | Not verified                       |
+| "it was working before" | Not fresh evidence                 |
+| "the tests look right"  | Not run                            |
+| "the change is trivial" | Most likely to break something     |
+| "just this once"        | The exception that proves the rule |
 
 ## When to apply
 
 - Before saying "it works"
-- Before saying "it's done" 
+- Before saying "it's done"
 - Before committing
 - Before creating a PR
 - Before marking a task complete

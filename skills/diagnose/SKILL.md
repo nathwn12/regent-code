@@ -36,7 +36,8 @@ When the bug is non-deterministic, your goal is not a clean repro but a **higher
 
 ### Iterate on the loop itself
 
-Once you have *a* loop, improve it:
+Once you have _a_ loop, improve it:
+
 - Faster? Cache setup, narrow scope, skip unrelated init.
 - Sharper signal? Assert on the specific symptom, not "didn't crash."
 - More deterministic? Pin time, seed RNG, isolate filesystem.
@@ -48,6 +49,7 @@ A 2-second deterministic loop is a debugging superpower. A 30-second flaky loop 
 Run the loop. Watch the bug appear.
 
 Confirm:
+
 - [ ] The failure matches what the **user** described — not a different failure nearby
 - [ ] Reproducible across multiple runs (or high enough rate for non-deterministic bugs)
 - [ ] Exact symptom captured (error message, wrong output, timing) so the fix can be verified against it
@@ -69,6 +71,7 @@ If you cannot state the prediction, the hypothesis is a vibe. Discard or sharpen
 Each probe maps to a specific prediction from Phase 3. Change one variable at a time.
 
 Tool preference:
+
 1. **Debugger / REPL inspection** — one breakpoint beats ten logs
 2. **Targeted logs** at the boundaries that distinguish hypotheses
 3. Never "log everything and grep"
@@ -84,6 +87,7 @@ Write the regression test **before the fix** — but only at a **correct seam**.
 If no correct seam exists, that is itself the finding. Note it. The architecture prevents locking down the bug.
 
 If a correct seam exists:
+
 1. Turn the minimised repro into a failing test at that seam
 2. Watch it fail
 3. Apply the fix
@@ -93,6 +97,7 @@ If a correct seam exists:
 ## Phase 6 — Cleanup + post-mortem
 
 Required before declaring done:
+
 - [ ] Original repro no longer reproduces (re-run Phase 1 loop)
 - [ ] Regression test passes (or absence of a seam is documented)
 - [ ] All `[DEBUG-...]` instrumentation removed
@@ -103,11 +108,11 @@ Required before declaring done:
 
 ## Red Flags
 
-| Behavior | Problem |
-|----------|---------|
-| Searching for "similar bugs" online | You don't have root cause. You're guessing. |
-| Changing code before running the loop | You don't know what you're fixing. |
-| "This might be the issue, let me try something" | That's not a hypothesis. That's a guess. |
-| Fixing the symptom, not the cause | The bug will reappear in a different form. |
-| 3+ failed fix attempts | Question your understanding. Escalate. |
-| Adding code instead of tests | Coverage without a red-green cycle proves nothing. |
+| Behavior                                        | Problem                                            |
+| ----------------------------------------------- | -------------------------------------------------- |
+| Searching for "similar bugs" online             | You don't have root cause. You're guessing.        |
+| Changing code before running the loop           | You don't know what you're fixing.                 |
+| "This might be the issue, let me try something" | That's not a hypothesis. That's a guess.           |
+| Fixing the symptom, not the cause               | The bug will reappear in a different form.         |
+| 3+ failed fix attempts                          | Question your understanding. Escalate.             |
+| Adding code instead of tests                    | Coverage without a red-green cycle proves nothing. |

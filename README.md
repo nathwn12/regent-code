@@ -21,6 +21,7 @@ Every phase has a gate. No phase skips. Every claim has evidence.
 ## What you get
 
 **5 custom tools** for agent orchestration:
+
 - `delegate()` — single focused subagent
 - `delegate_many()` — parallel subagents via Promise.all()
 - `research()` — parallel research across multiple questions
@@ -28,6 +29,7 @@ Every phase has a gate. No phase skips. Every claim has evidence.
 - `verify()` — requirements compliance checking
 
 **8 skills** with Iron Laws:
+
 - `orchestrator` — 5-phase pipeline: clarify → plan → execute → verify → report
 - `tdd` — NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 - `diagnose` — NO FIXES WITHOUT ROOT CAUSE INVESTIGATION
@@ -38,6 +40,7 @@ Every phase has a gate. No phase skips. Every claim has evidence.
 - `using-regent` — bootstrap, auto-injected every session
 
 **6 slash commands:**
+
 - `/orchestrate` — full pipeline from goal to shipped
 - `/delegate` — single subagent task
 - `/research` — parallel information gathering
@@ -52,7 +55,7 @@ Add to your project's `opencode.jsonc`:
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["regent@git+https://github.com/nathwn12/regent.git#v2.1.0"]
+  "plugin": ["regent@git+https://github.com/nathwn12/regent.git#v2.1.0"],
 }
 ```
 
@@ -61,7 +64,7 @@ Use the unpinned branch only when you intentionally want the latest changes:
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["regent@git+https://github.com/nathwn12/regent.git"]
+  "plugin": ["regent@git+https://github.com/nathwn12/regent.git"],
 }
 ```
 

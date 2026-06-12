@@ -5,6 +5,7 @@ Detailed process for Phase 1 of the orchestrator pipeline.
 ## 1. Explore project context
 
 Before asking any questions, understand what exists:
+
 - Read `CONTEXT.md`, `docs/adr/`, `UBIQUITOUS_LANGUAGE.md` for domain vocabulary
 - Read `README.md`, `package.json`, recent commits for project state
 - Run `explore(query="project structure")` for codebase layout
@@ -37,6 +38,7 @@ Present 2-3 approaches with trade-offs. Lead with your recommendation and explai
 ## 5. Present design
 
 Present the design in sections. Scale each section to its complexity:
+
 - Straightforward: a few sentences
 - Nuanced: up to 200-300 words
 
@@ -45,6 +47,7 @@ After each section, ask whether it looks right. Cover: architecture, components,
 ## 6. Self-review
 
 After writing the design document, check:
+
 - **Placeholders:** Any "TBD", "TODO", incomplete sections? Fix them.
 - **Consistency:** Do any sections contradict each other?
 - **Scope:** Focused enough for a single implementation plan?

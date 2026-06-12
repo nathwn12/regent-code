@@ -27,6 +27,7 @@ Each cycle tackles exactly one behavior. Do not batch behaviors into one cycle.
 ### VERIFY RED — Mandatory
 
 Run the test. Watch it fail. Confirm:
+
 - The failure message matches what you expect ("expected X but got undefined", not "cannot read property of undefined")
 - It fails because the feature is missing, not because of a typo in the test itself
 
@@ -41,6 +42,7 @@ Run the test. Watch it fail. Confirm:
 ### VERIFY GREEN — Mandatory
 
 Run the test. Watch it pass. Confirm:
+
 - The new test passes
 - All existing tests still pass
 
@@ -56,11 +58,11 @@ Do NOT write all tests first and then implement. That is not TDD — it's test-a
 
 ## Good tests
 
-| Property | What it means |
-|----------|--------------|
-| **Minimal** | Tests exactly one thing. If it fails, you know what broke. |
-| **Clear** | Test name = behavior description. Reader knows intent without reading the body. |
-| **Shows intent** | Demonstrates the desired API. Callers read tests as documentation. |
+| Property         | What it means                                                                   |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Minimal**      | Tests exactly one thing. If it fails, you know what broke.                      |
+| **Clear**        | Test name = behavior description. Reader knows intent without reading the body. |
+| **Shows intent** | Demonstrates the desired API. Callers read tests as documentation.              |
 
 ## When to mock
 
@@ -73,27 +75,28 @@ YOUR CODE → [ Mock Here ] → Time / Randomness
 ```
 
 Do NOT mock:
+
 - Your own functions, classes, or modules
 - Internal collaborators within the same module
 - Code you own and control
 
 ## Red Flags
 
-| Behavior | Problem |
-|----------|---------|
-| Writing implementation before test | Violates Iron Law. Delete it. |
-| Writing all tests then all code | Horizontal slices. Not TDD. |
-| Test passes immediately | You wrote a test for existing code. That's test-after. |
-| Can't think of how to test | Write the API you wish you had. The test shapes the design. |
-| Mocking everything | Your code is too coupled. Simplify. |
-| "Let me skip verification" | Skipping verification voids the guarantee. |
+| Behavior                           | Problem                                                     |
+| ---------------------------------- | ----------------------------------------------------------- |
+| Writing implementation before test | Violates Iron Law. Delete it.                               |
+| Writing all tests then all code    | Horizontal slices. Not TDD.                                 |
+| Test passes immediately            | You wrote a test for existing code. That's test-after.      |
+| Can't think of how to test         | Write the API you wish you had. The test shapes the design. |
+| Mocking everything                 | Your code is too coupled. Simplify.                         |
+| "Let me skip verification"         | Skipping verification voids the guarantee.                  |
 
 ## Rationalization Prevention
 
-| Excuse | Reality |
-|--------|---------|
-| "I'll just write the code first as a reference" | The reference becomes the implementation. Delete it. |
-| "This is too simple to need TDD" | Simple things have hidden edge cases. TDD finds them. |
-| "I'm being pragmatic" | "Pragmatic" = rationalization for skipping discipline. |
-| "Deleting the code is wasteful" | Keeping untested code is more wasteful. You'll debug it later. |
-| "The test is obvious, I don't need to see it fail" | You do. Always. |
+| Excuse                                             | Reality                                                        |
+| -------------------------------------------------- | -------------------------------------------------------------- |
+| "I'll just write the code first as a reference"    | The reference becomes the implementation. Delete it.           |
+| "This is too simple to need TDD"                   | Simple things have hidden edge cases. TDD finds them.          |
+| "I'm being pragmatic"                              | "Pragmatic" = rationalization for skipping discipline.         |
+| "Deleting the code is wasteful"                    | Keeping untested code is more wasteful. You'll debug it later. |
+| "The test is obvious, I don't need to see it fail" | You do. Always.                                                |
