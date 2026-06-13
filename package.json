@@ -1,6 +1,6 @@
 {
   "name": "regent",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Agent orchestration for OpenCode. From idea to shipped — zero ceremony.",
   "type": "module",
   "main": ".opencode/plugins/regent.js",
