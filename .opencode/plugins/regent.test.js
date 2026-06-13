@@ -396,6 +396,20 @@ test('explore handles missing focus path', async () => {
   assert.match(output.structure, /path not found/);
 });
 
+test('explore returns error when no context provided (Bug: process.cwd fallback)', async () => {
+  const plugin = await RegentPlugin({ client: {} });
+
+  const output = JSON.parse(
+    await plugin.tool.explore.execute({
+      query: 'test',
+    }),
+  );
+
+  assert.match(output.structure, /Error/);
+  assert.match(output.structure, /context/);
+  assert.match(output.summary, /context/);
+});
+
 test('transform returns early when no user messages', async () => {
   const plugin = await RegentPlugin({ client: {} });
 

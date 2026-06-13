@@ -30,16 +30,16 @@ Every phase gated. No phase skip. Every claim has evidence.
 
 **8 skills** + **6 roles** governed by constitution:
 
-| Skill | Court Role | Iron Law |
-|-------|-----------|----------|
-| `orchestrator` | Concierge | No gate bypass |
-| `tdd` | 舰官 Fleet Commander | NO CODE WITHOUT FAILING TEST |
-| `diagnose` | 监官 Inspector | NO FIX WITHOUT ROOT CAUSE |
-| `verification-before-completion` | 监官 Inspector | NO COMPLETION WITHOUT EVIDENCE |
-| `subagent-driven-development` | 舰官 Fleet Commander | Fresh subagent per task |
-| `prototype` | 舰官 Fleet Commander | Disposable by design |
-| `zoom-out` | 教官 Mentor | Start broad, then narrow |
-| `using-regent` | All | Bootstrap identity |
+| Skill                            | Court Role           | Iron Law                       |
+| -------------------------------- | -------------------- | ------------------------------ |
+| `orchestrator`                   | Concierge            | No gate bypass                 |
+| `tdd`                            | 舰官 Fleet Commander | NO CODE WITHOUT FAILING TEST   |
+| `diagnose`                       | 监官 Inspector       | NO FIX WITHOUT ROOT CAUSE      |
+| `verification-before-completion` | 监官 Inspector       | NO COMPLETION WITHOUT EVIDENCE |
+| `subagent-driven-development`    | 舰官 Fleet Commander | Fresh subagent per task        |
+| `prototype`                      | 舰官 Fleet Commander | Disposable by design           |
+| `zoom-out`                       | 教官 Mentor          | Start broad, then narrow       |
+| `using-regent`                   | All                  | Bootstrap identity             |
 
 **6 slash commands:**
 

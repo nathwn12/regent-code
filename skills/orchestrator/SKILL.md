@@ -49,12 +49,12 @@ Walk dependency graph:
 
 Result handling:
 
-| Status               | Action                                      |
-| -------------------- | ------------------------------------------- |
-| `done`               | Continue. Mark complete.                    |
-| `done_with_concerns` | Note concern. Continue unless critical.     |
-| `needs_context`      | Provide context, re-delegate.               |
-| `blocked`            | PAUSE. Assess. Escalate to user.            |
+| Status               | Action                                  |
+| -------------------- | --------------------------------------- |
+| `done`               | Continue. Mark complete.                |
+| `done_with_concerns` | Note concern. Continue unless critical. |
+| `needs_context`      | Provide context, re-delegate.           |
+| `blocked`            | PAUSE. Assess. Escalate to user.        |
 
 Partial failure:
 
