@@ -1,10 +1,25 @@
 # Regent
 
-**Agent orchestration for OpenCode. From idea to shipped — zero ceremony.**
+Agent orchestration for OpenCode. From idea to shipped — zero ceremony.
 
-Regent governs your code domain when you, sovereign, are absent. A court of six specialists (官), each with persona, values, and iron laws. Every session bootstrapped with [CONSTITUTION.md](CONSTITUTION.md) — identity, roles, principles, chain of command.
+---
 
-## How it works
+## Highlights
+
+- **Court governance** — Six AI specialists (Strategist, Architect, Fleet Commander, Inspector, Publisher, Mentor), each with defined persona, values, and iron laws. Every session starts with a Constitution — the single source of truth for how the court operates.
+- **Structured pipeline** — Clarify, plan, execute, verify, report. Every phase gated. No phase skip. No gate bypass. Every claim backed by fresh evidence.
+- **5 custom tools** — `delegate`, `delegate_many`, `research`, `explore`, `verify` for subagent orchestration and codebase analysis.
+- **7 skills** — TDD, systematic debugging, evidence-gated verification, disposable prototyping, codebase orientation, and more.
+- **6 slash commands** — `/orchestrate`, `/delegate`, `/research`, `/tdd`, `/diagnose`, `/verify`.
+- **Zero ceremony** — One entry in your OpenCode config. No manual install. Bootstraps on first message.
+
+---
+
+## Overview
+
+Regent governs your OpenCode sessions with a court of six specialists. It does not replace your judgement — it extends it. Your will, executed by specialists who each own one domain.
+
+The court follows a chain of command:
 
 ```
 Sovereign (you)
@@ -16,53 +31,21 @@ Sovereign (you)
   → 教官 Mentor — orientation, zoom-out (any time)
 ```
 
-Every phase gated. No phase skip. Every claim has evidence.
+Every phase is sequential and gated. The Strategist clarifies before the Architect plans. The Inspector verifies before the Publisher reports. The Mentor is available at any point for orientation.
 
-## What you get
+Five iron laws enforce discipline:
 
-**5 custom tools** for agent orchestration:
+1. Skill before action — even a 1% chance a skill applies? Load it.
+2. No code without a failing test first.
+3. No fix without root cause.
+4. No completion without fresh evidence.
+5. No phase skip. Cost of rework exceeds cost of gate.
 
-| Tool | What It Does |
-| --- | --- |
-| `delegate({ task, context, expected_output })` | Single focused subagent |
-| `delegate_many({ tasks: [{ id, task, context, expected_output }] })` | Parallel subagents via Promise.all() |
-| `research({ questions: [{ id, question, scope? }] })` | Parallel research across multiple questions |
-| `explore({ query, focus? })` | Codebase structure analysis |
-| `verify({ requirements, implementation_context })` | Requirements compliance checking |
+---
 
-**7 skills** + **6 roles** governed by constitution:
+## Quick start
 
-| Skill | Court Role | Iron Law |
-| --- | --- | --- |
-| `orchestrator` | Concierge | No gate bypass |
-| `tdd` | 舰官 Fleet Commander | NO CODE WITHOUT FAILING TEST |
-| `diagnose` | 监官 Inspector | NO FIX WITHOUT ROOT CAUSE |
-| `verification-before-completion` | 监官 Inspector | NO COMPLETION WITHOUT EVIDENCE |
-| `prototype` | 舰官 Fleet Commander | Disposable by design |
-| `zoom-out` | 教官 Mentor | Start broad, then narrow |
-| `using-regent` | All | Bootstrap identity |
-
-**2 custom subagents:**
-
-| Agent | Role | Purpose |
-| --- | --- | --- |
-| `regent-explore` | Mentor's reconnaissance arm | Focused codebase exploration, file discovery, structural analysis |
-| `regent-general` | Fleet Commander subagent | Focused implementation, verification, research, review tasks |
-
-**6 slash commands:**
-
-| Command | Routes To | Purpose |
-| --- | --- | --- |
-| `/orchestrate` | orchestrator skill | Full pipeline from goal to shipped |
-| `/delegate` | delegate tool | Single subagent task |
-| `/research` | research tool | Parallel research |
-| `/tdd` | tdd skill | Red-green-refactor cycle |
-| `/diagnose` | diagnose skill | Systematic debugging |
-| `/verify` | verification-before-completion skill | Evidence gate |
-
-## Installation
-
-Add to your project's `opencode.jsonc`:
+Add Regent to your OpenCode configuration:
 
 ```jsonc
 {
@@ -71,76 +54,109 @@ Add to your project's `opencode.jsonc`:
 }
 ```
 
-Use the unpinned branch only when you intentionally want the latest changes:
+Start a new OpenCode session. Regent bootstraps automatically on the first user message. No npm install. No manual setup.
 
-```jsonc
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": ["regent@git+https://github.com/nathwn12/regent.git"],
-}
-```
+For the latest (unpinned) version, omit the version tag from the plugin URL.
 
-Requires an OpenCode version that supports git plugin specs. If plugin loading fails, use the troubleshooting checks in `.opencode/INSTALL.md` and report your OpenCode version.
+### Walkthrough
 
-One plugin entry. No manual npm install. Regent bootstraps on the first user message of every session.
+1. **State a goal.** "Add dark mode toggle to settings panel."
+2. **Clarify.** The Strategist asks: what does dark mode mean (system preference or manual toggle)? Where does the settings panel live? What are the success criteria?
+3. **Plan.** The Architect explores the codebase and generates a task tree: types, toggle component, persistence, tests.
+4. **Execute.** The Fleet Commander dispatches subagents in parallel via `delegate_many` for independent tasks.
+5. **Verify.** The Inspector runs `verify` against every requirement.
+6. **Report.** The Publisher presents achievements with evidence, pending items, and next steps.
 
-## Principles
+From here: approve, adjust, or loop back to a new goal.
 
-- **Throughput first.** Parallel by default. `delegate_many()` and `research()` run subagents concurrently.
-- **Goal-locked.** Do not drift. Every action traces back to a stated goal.
-- **Evidence before claims.** Fresh verification or it did not happen.
-- **Human at decision points.** Design approval, plan approval, blockers — gates where the user decides.
-- **Zero ceremony.** One command to start. One plugin entry. No manual setup.
+---
+
+## Reference
+
+### Custom tools
+
+| Tool            | Purpose                                     |
+| --------------- | ------------------------------------------- |
+| `delegate`      | Single focused subagent task                |
+| `delegate_many` | Parallel subagents via Promise.all          |
+| `research`      | Parallel research across multiple questions |
+| `explore`       | Codebase structure analysis                 |
+| `verify`        | Requirements compliance checking            |
+
+### Skills
+
+| Skill                            | Court role      | Iron law                       |
+| -------------------------------- | --------------- | ------------------------------ |
+| `orchestrator`                   | Concierge       | No gate bypass                 |
+| `tdd`                            | Fleet Commander | No code without failing test   |
+| `diagnose`                       | Inspector       | No fix without root cause      |
+| `verification-before-completion` | Inspector       | No completion without evidence |
+| `prototype`                      | Fleet Commander | Disposable by design           |
+| `zoom-out`                       | Mentor          | Start broad, then narrow       |
+| `using-regent`                   | All             | Bootstrap identity             |
+
+### Subagents
+
+| Agent            | Role                     | Purpose                                   |
+| ---------------- | ------------------------ | ----------------------------------------- |
+| `regent-explore` | Mentor reconnaissance    | Codebase exploration, structural analysis |
+| `regent-general` | Fleet Commander subagent | Implementation, verification, research    |
+
+### Slash commands
+
+| Command        | Routes to                            | Purpose                            |
+| -------------- | ------------------------------------ | ---------------------------------- |
+| `/orchestrate` | orchestrator skill                   | Full pipeline from goal to shipped |
+| `/delegate`    | delegate tool                        | Single subagent task               |
+| `/research`    | research tool                        | Parallel research                  |
+| `/tdd`         | tdd skill                            | Red-green-refactor cycle           |
+| `/diagnose`    | diagnose skill                       | Systematic debugging               |
+| `/verify`      | verification-before-completion skill | Evidence gate                      |
+
+---
 
 ## Project structure
 
 ```
 regent/
-├── .opencode/                # Plugin code
-│   ├── plugins/
-│   │   ├── regent.js         # Plugin entry — 5 custom tools, config, bootstrap
-│   │   └── regent.test.js    # 23+ tests
-│   ├── commands/             # 6 slash command templates (.md with frontmatter)
-│   ├── agent/                # 2 custom subagent definitions (.md with frontmatter)
-│   ├── package.json          # Plugin dependency: @opencode-ai/plugin
-│   └── INSTALL.md            # Troubleshooting guide
-├── skills/                   # 7 skills loaded by OpenCode's skill system
-│   ├── orchestrator/         # 5-phase pipeline (clarify → plan → execute → verify → report)
-│   ├── tdd/                  # Red-green-refactor with iron law enforcement
-│   ├── diagnose/             # Systematic debugging: loop → reproduce → hypothesise → fix
+├── .opencode/                   # Plugin
+│   ├── plugins/regent.js        # Entry — 5 tools, config, bootstrap
+│   ├── plugins/regent.test.js   # 23+ tests
+│   ├── commands/                # 6 slash commands
+│   ├── agent/                   # 2 subagents
+│   └── package.json
+├── skills/                      # 7 skills
+│   ├── orchestrator/            # 5-phase pipeline
+│   ├── tdd/                     # Red-green-refactor
+│   ├── diagnose/                # Systematic debugging
 │   ├── verification-before-completion/
-│   ├── prototype/            # Disposable by design
-│   ├── zoom-out/             # Codebase orientation
-│   └── using-regent/         # Bootstrap: constitution ref + tool/command catalog
-├── CONSTITUTION.md           # Single source of truth for court roles, principles, iron laws
-├── AGENTS.md                 # Agent development guide
-├── tsconfig.json             # JSDoc typecheck on regent.js
-├── eslint.config.js          # ESLint config (devDependencies)
-├── package.json              # Development tooling (eslint, prettier, typescript)
-└── docs/
-    ├── contributing.md       # Architecture, test, and code style guide
-    └── superpowers/specs/    # Design documents output by clarify phase
+│   ├── prototype/               # Disposable by design
+│   ├── zoom-out/                # Codebase orientation
+│   └── using-regent/            # Bootstrap
+├── CONSTITUTION.md              # Roles, principles, iron laws
+├── AGENTS.md                    # Agent development guide
+├── docs/
+│   ├── contributing.md
+│   └── superpowers/specs/
+├── package.json                 # Dev tooling
+├── tsconfig.json                # JSDoc typecheck
+└── eslint.config.js             # Lint rules
 ```
 
-## Example walkthrough
-
-1. Install: add `"regent@git+https://github.com/nathwn12/regent.git#v2.2.3"` to your `opencode.jsonc` plugins array.
-2. Start a new OpenCode session. Regent's bootstrap auto-injects the tool & command catalog.
-3. Type a goal: `Add dark mode toggle to settings panel`.
-4. Regent loads the orchestrator skill and runs:
-   - **Clarify** — asks what dark mode means (system preference? manual toggle?), where the settings panel lives, success criteria.
-   - **Plan** — explores the codebase, generates task tree (types → toggle component → persistence → tests).
-   - **Execute** — dispatches subagents in parallel via `delegate_many()` for independent tasks.
-   - **Verify** — runs `verify()` checking each requirement against implementation.
-   - **Report** — presents achievements with evidence, pending items, and next steps.
-5. Approve, adjust, or loop back. Three options: new goal, fix issues, or commit/PR.
+---
 
 ## Development
 
+```bash
+npm install                          # root dev dependencies
+cd .opencode && npm install && cd .. # plugin dependency
+npm run verify                       # format → lint → typecheck → test
+```
+
 See [`docs/contributing.md`](docs/contributing.md) for architecture, testing, and code style guidelines.
 
-```bash
-npm install          # root devDependencies (eslint, prettier, typescript)
-cd .opencode && npm install && cd ..   # plugin dependency (@opencode-ai/plugin)
-npm run verify       # format → lint → typecheck → test
-```
+---
+
+## Author
+
+Built by [@nathwn12](https://github.com/nathwn12). Regent is an OpenCode plugin for structured, governed AI development. Start a [discussion](https://github.com/nathwn12/regent/discussions) or open an issue.
