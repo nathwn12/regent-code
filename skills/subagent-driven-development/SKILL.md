@@ -1,6 +1,7 @@
 ---
 name: subagent-driven-development
 description: DEPRECATED — merged into orchestrator Phase 3. Use /orchestrate instead.
+hidden: true
 ---
 
 # Subagent-Driven Development — DEPRECATED

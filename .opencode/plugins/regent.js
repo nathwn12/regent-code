@@ -439,13 +439,12 @@ export const RegentPlugin = async ({ client }) => {
             .describe('Optional narrowing: directory path, file pattern, or topic'),
         },
         async execute(args, context) {
-          const worktree = context?.worktree || context?.directory || '';
+          const worktree = context?.directory || context?.worktree || '';
           if (!worktree) {
             return JSON.stringify({
               structure:
-                'Error: Cannot determine project directory. OpenCode runtime did not provide context.worktree or context.directory. ' +
-                'Per the plugin SDK, prefer context.directory over process.cwd() when resolving relative paths.',
-              summary: 'Exploration requires context.worktree or context.directory',
+                'Error: Cannot determine project directory. OpenCode runtime did not provide context.directory or context.worktree.',
+              summary: 'Exploration requires context.directory or context.worktree',
             });
           }
           let result = `Codebase exploration for: ${args.query}\n\n`;
@@ -530,7 +529,7 @@ export const RegentPlugin = async ({ client }) => {
             .describe('What was built: file list, summary of changes, or diff'),
         },
         async execute(args) {
-          if (!args?.requirements || !args?.implementation_context) {
+          if (!args || args.requirements == null || args.implementation_context == null) {
             return JSON.stringify({
               compliant: false,
               requirements_met: [],
