@@ -4,25 +4,29 @@
 
 ```
 regent/
-├── .opencode/            # Plugin code
+├── .opencode/                # Plugin code
 │   ├── plugins/
-│   │   ├── regent.js     # Plugin entry — 5 custom tools, config, bootstrap
-│   │   └── regent.test.js
-│   ├── commands/         # 6 slash command templates (.md with frontmatter)
-│   ├── agent/            # 2 custom subagent definitions (.md with frontmatter)
-│   ├── package.json      # Plugin dependencies (installed by OpenCode)
+│   │   ├── regent.js         # Plugin entry — 5 custom tools, config, bootstrap
+│   │   └── regent.test.js    # 23+ tests
+│   ├── commands/             # 6 slash command templates (.md with frontmatter)
+│   ├── agent/                # 2 custom subagent definitions (.md with frontmatter)
+│   ├── package.json          # Plugin dependency: @opencode-ai/plugin
 │   └── INSTALL.md
-├── skills/               # 7 skills loaded by OpenCode's skill system
-│   ├── orchestrator/     # 5-phase pipeline (clarify → plan → execute → verify → report)
-│   ├── tdd/              # Red-green-refactor with iron law enforcement
-│   ├── diagnose/         # Systematic debugging: loop → reproduce → hypothesise → fix
+├── skills/                   # 7 skills loaded by OpenCode's skill system
+│   ├── orchestrator/         # 5-phase pipeline (clarify → plan → execute → verify → report)
+│   ├── tdd/                  # Red-green-refactor with iron law enforcement
+│   ├── diagnose/             # Systematic debugging: loop → reproduce → hypothesise → fix
 │   ├── verification-before-completion/
-│   ├── prototype/        # Disposable by design
-│   ├── zoom-out/         # Codebase orientation
-│   └── using-regent/     # Bootstrap: constitution ref + tool/command catalog
-├── CONSTITUTION.md       # Single source of truth for court roles, principles, iron laws
+│   ├── prototype/            # Disposable by design
+│   ├── zoom-out/             # Codebase orientation
+│   └── using-regent/         # Bootstrap: constitution ref + tool/command catalog
+├── CONSTITUTION.md           # Single source of truth for court roles, principles, iron laws
+├── AGENTS.md                 # Agent development guide
+├── tsconfig.json             # JSDoc typecheck on regent.js
+├── eslint.config.js          # ESLint config
+├── package.json              # Dev tooling (eslint, prettier, typescript)
 └── docs/
-    └── superpowers/specs/  # Design documents output by clarify phase
+    └── superpowers/specs/    # Design documents output by clarify phase
 ```
 
 ## How the plugin works
@@ -38,12 +42,21 @@ regent/
 2. Add to `README.md` skill table.
 3. If it needs a slash command, create `.opencode/commands/<name>.md`.
 
-## Running tests
+## Running checks
 
 ```bash
-cd .opencode
-npm install
-node --test plugins/regent.test.js
+npm install                       # root devDependencies (lockfile not committed)
+cd .opencode && npm ci && cd ..   # plugin dependency (lockfile committed for CI)
+npm run verify                    # format:check → lint → typecheck → test
+```
+
+You can also run individual checks:
+
+```bash
+npm test                       # node --test .opencode/plugins/regent.test.js
+npm run lint                   # eslint
+npm run typecheck              # tsc --noEmit (JSDoc types)
+npm run format:check           # prettier --check
 ```
 
 ## Code style
@@ -55,4 +68,4 @@ node --test plugins/regent.test.js
 
 ## Verdict gates
 
-Before committing: run the test suite. All 22+ tests must pass.
+Before committing: `npm run verify` must pass (format → lint → typecheck → test).

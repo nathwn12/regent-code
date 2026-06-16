@@ -7,11 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .opencode
 
     steps:
       - uses: actions/checkout@v4
@@ -19,8 +16,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: .opencode/package-lock.json
 
-      - run: npm ci
-      - run: node --test plugins/regent.test.js
+      - name: Install root devDependencies
+        run: npm install
+
+      - name: Install plugin dependency
+        working-directory: .opencode
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        working-directory: .opencode
+        run: node --test plugins/regent.test.js

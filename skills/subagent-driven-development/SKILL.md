@@ -9,6 +9,7 @@ hidden: true
 This skill has been merged into the **Orchestrator's Execute phase (Phase 3)**.
 
 Use `/orchestrate` instead, which now includes:
+
 - Subagent dispatch with `delegate()` / `delegate_many()`
 - Two-stage review (spec compliance + code quality) for non-trivial tasks
 - Status-based result handling (done, blocked, needs_context, done_with_concerns)

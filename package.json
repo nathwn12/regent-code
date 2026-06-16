@@ -1,6 +1,6 @@
 {
   "name": "regent",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "description": "Agent orchestration for OpenCode. From idea to shipped — zero ceremony.",
   "type": "module",
   "main": ".opencode/plugins/regent.js",
@@ -13,11 +13,22 @@
     "type": "git",
     "url": "git+https://github.com/nathwn12/regent.git"
   },
+  "scripts": {
+    "lint": "eslint .opencode/plugins/ --max-warnings 0",
+    "lint:fix": "eslint .opencode/plugins/regent.js skills/ --fix",
+    "format": "prettier --write .opencode/plugins/ skills/ --no-error-on-unmatched-pattern",
+    "format:check": "prettier --check .opencode/plugins/ skills/ --no-error-on-unmatched-pattern",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test .opencode/plugins/regent.test.js",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.3",
     "eslint": "^10.4.1",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
-    "prettier": "^3.8.4"
+    "prettier": "^3.8.4",
+    "typescript": "^5.8.0"
   }
 }

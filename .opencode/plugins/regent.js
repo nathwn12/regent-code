@@ -8,14 +8,19 @@ const skillsDir = path.resolve(__dirname, '../../skills');
 const commandsDir = path.resolve(__dirname, '../commands');
 const agentsDir = path.resolve(__dirname, '../agent');
 
+/** @typedef {Record<string, string | boolean>} Frontmatter */
+/** @typedef {{ name: string, frontmatter: Frontmatter, body: string }} MdAsset */
+
 // ── Frontmatter extraction ──────────────────────────────────
+/** @param {string} content @returns {Frontmatter} */
 const parseFrontmatter = (content) => {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (!match) return {};
 
+  /** @type {Frontmatter} */
   const result = {};
-  let currentKey = null;
-  let currentValue = null;
+  let currentKey = /** @type {string | null} */ (null);
+  let currentValue = '';
 
   for (const line of match[1].split(/\r?\n/)) {
     const parsed = line.match(/^(\w+):\s*(.*)$/);
@@ -34,6 +39,7 @@ const parseFrontmatter = (content) => {
   }
 
   for (const [key, value] of Object.entries(result)) {
+    if (typeof value !== 'string') continue;
     if (value === 'true') result[key] = true;
     else if (value === 'false') result[key] = false;
     else if (
@@ -47,15 +53,18 @@ const parseFrontmatter = (content) => {
   return result;
 };
 
+/** @param {string} content @returns {string} */
 const extractContent = (content) => {
   const match = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/);
   return match ? match[1] : content;
 };
 
+/** @param {string} msg */
 const log = (msg) => {
   console.error(`[regent] ${msg}`);
 };
 
+/** @param {string} dir @returns {MdAsset[]} */
 const readMarkdownAssets = (dir) => {
   try {
     if (!fs.existsSync(dir)) {
@@ -75,11 +84,12 @@ const readMarkdownAssets = (dir) => {
         };
       });
   } catch (err) {
-    log(`error reading ${dir}: ${err.message}`);
+    log(`error reading ${dir}: ${err instanceof Error ? err.message : String(err)}`);
     return [];
   }
 };
 
+/** @returns {Array<{ name: string, config: Record<string, unknown> }>} */
 const discoverBundledCommands = () =>
   readMarkdownAssets(commandsDir)
     .filter((command) => command.body)
@@ -103,6 +113,7 @@ const discoverBundledCommands = () =>
       },
     }));
 
+/** @returns {Array<{ name: string, config: Record<string, unknown> }>} */
 const discoverBundledAgents = () =>
   readMarkdownAssets(agentsDir)
     .filter((agent) => agent.body && agent.frontmatter.description)
@@ -124,6 +135,7 @@ const discoverBundledAgents = () =>
     }));
 
 // ── Bootstrap cache ──────────────────────────────────────────
+/** @type {string | null | undefined} */
 let bootstrapCache;
 
 const getBootstrap = () => {
@@ -145,6 +157,14 @@ ${content}
 };
 
 // ── Shared subagent dispatch ─────────────────────────────────
+/**
+ * @param {{ session: { create: Function, prompt: Function, delete: Function } }} client
+ * @param {string} task
+ * @param {string} context
+ * @param {string} expectedOutput
+ * @param {{ directory?: string, worktree?: string }} [toolContext]
+ * @returns {Promise<{ status: string, output: string, concerns: string[], files_changed: string[] }>}
+ */
 async function dispatchSubagent(client, task, context, expectedOutput, toolContext = {}) {
   let session;
   try {
@@ -205,7 +225,8 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
     }
 
     const filesChanged = (() => {
-      const pathPattern = /(?:^|\n)(?:[\w.\-/\\]+\.[a-zA-Z0-9]+|[\w.\-]+(?:[\\/][\w.\-]+)+(?:\.[a-zA-Z0-9]+)?)/gm;
+      const pathPattern =
+        /(?:^|\n)(?:[\w./\\-]+\.[a-zA-Z0-9]+|[\w.-]+(?:[\\/][\w.-]+)+(?:\.[a-zA-Z0-9]+)?)/gm;
       const matches = responseText.match(pathPattern);
       return (matches || [])
         .map((f) => f.trim())
@@ -221,7 +242,12 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
 
     return { status, output, concerns, files_changed: filesChanged };
   } catch (err) {
-    return { status: 'blocked', output: `Subagent error: ${err.message}`, concerns: [] };
+    return {
+      status: 'blocked',
+      output: `Subagent error: ${err instanceof Error ? err.message : String(err)}`,
+      concerns: [],
+      files_changed: [],
+    };
   } finally {
     if (session?.id) {
       try {
@@ -237,9 +263,11 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
 }
 
 // ── Plugin export ────────────────────────────────────────────
+/** @param {{ client: { session: { create: Function, prompt: Function, delete: Function } } }} params */
 export const RegentPlugin = async ({ client }) => {
   return {
     // Register skills path so OpenCode discovers regent skills
+    /** @param {{ skills?: { paths?: string[] }, command?: Record<string, unknown>, agent?: Record<string, unknown> }} config */
     config: async (config) => {
       config.skills = config.skills || {};
       config.skills.paths = config.skills.paths || [];
@@ -247,14 +275,14 @@ export const RegentPlugin = async ({ client }) => {
         config.skills.paths.push(skillsDir);
       }
 
-      config.command = config.command || {};
+      config.command = config.command || /** @type {Record<string, unknown>} */ ({});
       for (const command of discoverBundledCommands()) {
         if (!config.command[command.name]) {
           config.command[command.name] = command.config;
         }
       }
 
-      config.agent = config.agent || {};
+      config.agent = config.agent || /** @type {Record<string, unknown>} */ ({});
       for (const agent of discoverBundledAgents()) {
         if (!config.agent[agent.name]) {
           config.agent[agent.name] = agent.config;
@@ -403,14 +431,10 @@ export const RegentPlugin = async ({ client }) => {
             summaryParts.push(`Addressed: ${findingsList.join(', ')}`);
           }
           if (blocked.length > 0) {
-            summaryParts.push(
-              `Blocked: ${blocked.map((r) => r.question).join(', ')}`,
-            );
+            summaryParts.push(`Blocked: ${blocked.map((r) => r.question).join(', ')}`);
           }
           if (needsContext.length > 0) {
-            summaryParts.push(
-              `Needs context: ${needsContext.map((r) => r.question).join(', ')}`,
-            );
+            summaryParts.push(`Needs context: ${needsContext.map((r) => r.question).join(', ')}`);
           }
 
           return JSON.stringify({
@@ -467,6 +491,7 @@ export const RegentPlugin = async ({ client }) => {
             const srcDir = path.join(worktree, 'src');
             if (fs.existsSync(srcDir)) {
               result += '## src/ directory\n';
+              /** @param {string} dir @param {number} depth */
               const walk = (dir, depth) => {
                 if (depth > 3) return;
                 const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -540,24 +565,27 @@ export const RegentPlugin = async ({ client }) => {
             });
           }
 
+          /** @param {string} s */
           const getKeyBigrams = (s) => {
             const words = s
               .toLowerCase()
               .split(/\s+/)
               .filter((w) => w.length > 3);
-            const bigrams = [];
+            const bigrams = /** @type {string[]} */ ([]);
             for (let i = 0; i < words.length - 1; i++) {
               bigrams.push(words[i] + ' ' + words[i + 1]);
             }
             return bigrams;
           };
 
+          /** @param {string} s */
           const getKeyUnigrams = (s) =>
             s
               .toLowerCase()
               .split(/\s+/)
               .filter((w) => w.length > 3);
 
+          /** @param {string} s */
           const stripCheckbox = (s) =>
             s
               .replace(/^[-*]\s*\[\s*[x ]?\s*\]\s*/i, '')

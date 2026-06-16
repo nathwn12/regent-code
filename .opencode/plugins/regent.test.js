@@ -486,7 +486,8 @@ test('verify uses bigram matching for accuracy', async () => {
   const resultWithMatch = JSON.parse(
     await plugin.tool.verify.execute({
       requirements: '- Add user login form',
-      implementation_context: 'src/login.tsx contains the user login form with email and password fields',
+      implementation_context:
+        'src/login.tsx contains the user login form with email and password fields',
     }),
   );
   assert.equal(resultWithMatch.requirements_met.length, 1);
@@ -522,9 +523,7 @@ test('research synthesis returns meaningful summary', async () => {
   const output = JSON.parse(
     await plugin.tool.research.execute(
       {
-        questions: [
-          { id: 'q1', question: 'What is Regent?' },
-        ],
+        questions: [{ id: 'q1', question: 'What is Regent?' }],
       },
       { directory: repoRoot },
     ),
@@ -554,9 +553,7 @@ test('research synthesis reports blocked questions', async () => {
   const output = JSON.parse(
     await plugin.tool.research.execute(
       {
-        questions: [
-          { id: 'q1', question: 'Secret API' },
-        ],
+        questions: [{ id: 'q1', question: 'Secret API' }],
       },
       { directory: repoRoot },
     ),
@@ -577,15 +574,17 @@ test('filesChanged regex matches extensionless paths with separators', async () 
         async prompt(_input) {
           return {
             data: {
-              parts: [{
-                type: 'text',
-                text: [
-                  '### Files Changed',
-                  'src/components/Header',
-                  'src/index.js',
-                  'Makefile',
-                ].join('\n'),
-              }],
+              parts: [
+                {
+                  type: 'text',
+                  text: [
+                    '### Files Changed',
+                    'src/components/Header',
+                    'src/index.js',
+                    'Makefile',
+                  ].join('\n'),
+                },
+              ],
             },
           };
         },
@@ -605,6 +604,9 @@ test('filesChanged regex matches extensionless paths with separators', async () 
   );
 
   assert.ok(output.files_changed.includes('src/index.js'), 'should match path with extension');
-  assert.ok(output.files_changed.includes('src/components/Header'), 'should match extensionless path with separator');
+  assert.ok(
+    output.files_changed.includes('src/components/Header'),
+    'should match extensionless path with separator',
+  );
   assert.equal(output.files_changed.length, 2);
 });
