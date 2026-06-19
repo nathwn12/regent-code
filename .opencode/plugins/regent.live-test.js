@@ -251,7 +251,10 @@ test('[LIVE] explore — focus path exactly equals worktree root', async () => {
 test('[LIVE] explore — focus path with trailing slash', async () => {
   const plugin = await RegentPlugin({ client: {} });
   const output = JSON.parse(
-    await plugin.tool.explore.execute({ query: 'test', focus: '.opencode\\skills\\' }, { worktree: repoRoot }),
+    await plugin.tool.explore.execute(
+      { query: 'test', focus: '.opencode\\skills\\' },
+      { worktree: repoRoot },
+    ),
   );
   assert.match(output.structure, /orchestrator/);
 });
