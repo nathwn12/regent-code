@@ -1,6 +1,6 @@
 {
-  "name": "regent",
-  "version": "2.2.3",
+  "name": "regent-code",
+  "version": "2.3.0",
   "description": "Agent orchestration for OpenCode. From idea to shipped — zero ceremony.",
   "type": "module",
   "main": ".opencode/plugins/regent.js",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nathwn12/regent.git"
+    "url": "git+https://github.com/nathwn12/regent-code.git"
   },
   "scripts": {
     "lint": "eslint .opencode/plugins/ --max-warnings 0",

@@ -128,7 +128,7 @@ test('explore uses OpenCode worktree context when provided', async () => {
     ),
   );
 
-  assert.match(output.structure, /"name": "regent"/);
+  assert.match(output.structure, /"name": "regent-code"/);
 });
 
 test('bootstrap keeps using-regent as the single tool mapping source', async () => {

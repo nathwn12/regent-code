@@ -5,7 +5,7 @@
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["regent@git+https://github.com/nathwn12/regent.git#v2.2.0"],
+  "plugin": ["regent-code@git+https://github.com/nathwn12/regent-code.git#v2.3.0"],
 }
 ```
 
@@ -14,7 +14,7 @@
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["regent@git+https://github.com/nathwn12/regent.git"],
+  "plugin": ["regent-code@git+https://github.com/nathwn12/regent-code.git"],
 }
 ```
 
@@ -35,7 +35,7 @@ Start a new session. The AutoPowers bootstrap injects automatically. Run `/orche
 
 **Skills not found:**
 
-- Verify the plugin installed correctly — check `~/.cache/opencode/packages/regent@git+https_*/node_modules/regent/skills/`
+- Verify the plugin installed correctly — check `~/.cache/opencode/packages/regent-code@git+https_*/node_modules/regent-code/skills/`
 
 **Orchestrator not auto-triggering:**
 

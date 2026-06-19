@@ -50,7 +50,7 @@ Add Regent to your OpenCode configuration:
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["regent@git+https://github.com/nathwn12/regent.git#v2.2.3"],
+  "plugin": ["regent-code@git+https://github.com/nathwn12/regent-code.git#v2.3.0"],
 }
 ```
 
@@ -159,4 +159,4 @@ See [`docs/contributing.md`](docs/contributing.md) for architecture, testing, an
 
 ## Author
 
-Built by [@nathwn12](https://github.com/nathwn12). Regent is an OpenCode plugin for structured, governed AI development. Start a [discussion](https://github.com/nathwn12/regent/discussions) or open an issue.
+Built by [@nathwn12](https://github.com/nathwn12). Regent is an OpenCode plugin for structured, governed AI development. Start a [discussion](https://github.com/nathwn12/regent-code/discussions) or open an issue.

@@ -4,9 +4,21 @@ import { fileURLToPath } from 'url';
 import { tool } from '@opencode-ai/plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const skillsDir = path.resolve(__dirname, '../../skills');
+const rootDir = path.resolve(__dirname, '../..');
+const skillsDir = path.resolve(rootDir, 'skills');
 const commandsDir = path.resolve(__dirname, '../commands');
 const agentsDir = path.resolve(__dirname, '../agent');
+
+let regentVersion = 'unknown';
+try {
+  const pkgPath = path.join(rootDir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    regentVersion = pkg.version || 'unknown';
+  }
+} catch {
+  /* version non-critical */
+}
 
 /** @typedef {Record<string, string | boolean>} Frontmatter */
 /** @typedef {{ name: string, frontmatter: Frontmatter, body: string }} MdAsset */
@@ -61,7 +73,7 @@ const extractContent = (content) => {
 
 /** @param {string} msg */
 const log = (msg) => {
-  console.error(`[regent] ${msg}`);
+  console.error(`[regent v${regentVersion}] ${msg}`);
 };
 
 /** @param {string} dir @returns {MdAsset[]} */
@@ -151,6 +163,9 @@ const getBootstrap = () => {
 
   bootstrapCache = `<EXTREMELY_IMPORTANT>
 ${content}
+
+## Regent Version
+Regent v${regentVersion} — See CONSTITUTION.md at repo root for full identity and court roles.
 </EXTREMELY_IMPORTANT>`;
 
   return bootstrapCache;
@@ -170,7 +185,9 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
   try {
     const sessionResult = await client.session.create({
       ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
-      body: { title: `regent: ${task.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 60)}` },
+      body: {
+        title: `regent v${regentVersion}: ${task.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 50)}`,
+      },
     });
     session = sessionResult.data ?? sessionResult;
 
