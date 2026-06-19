@@ -9,7 +9,7 @@ Agent orchestration for OpenCode. From idea to shipped — zero ceremony.
 - **Court governance** — Six AI specialists (Strategist, Architect, Fleet Commander, Inspector, Publisher, Mentor), each with defined persona, values, and iron laws. Every session starts with a Constitution — the single source of truth for how the court operates.
 - **Structured pipeline** — Clarify, plan, execute, verify, report. Every phase gated. No phase skip. No gate bypass. Every claim backed by fresh evidence.
 - **6 custom tools** — `delegate`, `delegate_many`, `research`, `explore`, `verify`, `changed-files` for subagent orchestration, codebase analysis, and file change tracking.
-- **6 skills** — TDD, systematic debugging, evidence-gated verification, disposable prototyping, codebase orientation, and more.
+- **7 skills** — TDD, systematic debugging, evidence-gated verification, disposable prototyping, codebase orientation, bootstrap, and more.
 - **7 slash commands** — `/orchestrate`, `/delegate`, `/research`, `/tdd`, `/diagnose`, `/verify`, `/review`.
 - **Parallel visibility** — Subagent sessions persist as navigable TUI child sessions with toast notifications for start/complete/error.
 - **Zero ceremony** — One entry in your OpenCode config. No manual install. Bootstraps on first message.
@@ -129,7 +129,7 @@ regent/
 │   ├── commands/                # 7 slash commands
 │   ├── agents/                  # 2 subagents
 │   └── package.json
-├── .opencode/skills/            # 6 skills
+├── .opencode/skills/            # 7 skills
 │   ├── orchestrator/            # 5-phase pipeline + stagnation detection
 │   ├── tdd/                     # Red-green-refactor
 │   ├── diagnose/                # Systematic debugging

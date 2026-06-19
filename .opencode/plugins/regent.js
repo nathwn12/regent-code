@@ -259,6 +259,64 @@ async function withRetry(fn, maxRetries = 2) {
   throw lastError;
 }
 
+// ── Structured output schema for subagent responses ──
+const SUBAGENT_OUTPUT_SCHEMA = {
+  type: 'object',
+  properties: {
+    summary: { type: 'string', description: 'Brief summary of what was done' },
+    status: {
+      type: 'string',
+      enum: ['done', 'blocked', 'needs_context', 'done_with_concerns'],
+      description: 'Task completion status',
+    },
+    concerns: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'Any concerns or issues encountered',
+    },
+    files_changed: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'List of files created or modified',
+    },
+  },
+  required: ['summary', 'status'],
+};
+
+/**
+ * @param {string} text
+ * @returns {{ status: string, concerns: string[], filesChanged: string[] }}
+ */
+function parseSubagentTextResponse(text) {
+  let status = 'done';
+  let concerns = [];
+
+  if (text.includes('BLOCKED')) {
+    status = 'blocked';
+  } else if (text.includes('NEEDS_CONTEXT')) {
+    status = 'needs_context';
+  } else if (text.includes('CONCERN:')) {
+    status = 'done_with_concerns';
+    concerns = text.match(/CONCERN:.*$/gm)?.map((c) => c.replace('CONCERN:', '').trim()) || [];
+  }
+
+  const pathPattern =
+    /(?:^|\n)(?:[\w./\\-]+\.[a-zA-Z0-9]+|[\w.-]+(?:[\\/][\w.-]+)+(?:\.[a-zA-Z0-9]+)?|^[A-Za-z][\w-]+\.[\w-]+|^[A-Za-z][\w-]+(?:\.[\w-]+)*$(?!\.))/gm;
+  const matches = text.match(pathPattern);
+  const filesChanged = (matches || [])
+    .map((f) => f.trim())
+    .filter(
+      (f) =>
+        !f.startsWith('CONCERN:') &&
+        !f.startsWith('NEEDS_CONTEXT') &&
+        !f.startsWith('BLOCKED') &&
+        !/^\d+\.\s/.test(f),
+    )
+    .slice(0, 20);
+
+  return { status, concerns, filesChanged };
+}
+
 // ── Shared subagent dispatch ─────────────────────────────────
 /**
  * @param {{ session: { create: Function, prompt: Function, delete: Function }, tui?: { showToast?: Function } }} client
@@ -305,9 +363,10 @@ async function dispatchSubagent(
       expectedOutput,
       ``,
       `Complete the task. When you finish, provide:`,
-      `1. A brief summary of what you did`,
-      `2. Any concerns or issues encountered`,
-      `3. List of files changed`,
+      `- summary: What you did`,
+      `- status: one of: done, blocked, needs_context, done_with_concerns`,
+      `- concerns: Any issues encountered (if status is done_with_concerns)`,
+      `- files_changed: List of files created or modified`,
       ``,
       `If you need more context, say NEEDS_CONTEXT and explain what you need.`,
       `If you cannot complete the task, say BLOCKED and explain why.`,
@@ -320,47 +379,42 @@ async function dispatchSubagent(
         body: {
           agent: 'regent-general',
           parts: [{ type: 'text', text: prompt }],
+          format: {
+            type: 'json_schema',
+            schema: SUBAGENT_OUTPUT_SCHEMA,
+          },
         },
       }),
     );
     const message = result.data ?? result;
 
-    const responseText =
-      message.parts
-        ?.filter((p) => p.type === 'text')
-        .map((p) => p.text)
-        .filter(Boolean)
-        .join('\n') || '';
-
+    // Prefer structured output; fall back to text parsing
+    const structuredOutput = message.info?.structured_output;
     let status = 'done';
-    let output = responseText;
+    let output = '';
     let concerns = [];
+    let filesChanged = [];
 
-    if (responseText.includes('BLOCKED')) {
-      status = 'blocked';
-    } else if (responseText.includes('NEEDS_CONTEXT')) {
-      status = 'needs_context';
-    } else if (responseText.includes('CONCERN:')) {
-      status = 'done_with_concerns';
-      concerns =
-        responseText.match(/CONCERN:.*$/gm)?.map((c) => c.replace('CONCERN:', '').trim()) || [];
+    if (structuredOutput) {
+      status = structuredOutput.status || 'done';
+      output = structuredOutput.summary || '';
+      concerns = Array.isArray(structuredOutput.concerns) ? structuredOutput.concerns : [];
+      filesChanged = Array.isArray(structuredOutput.files_changed)
+        ? structuredOutput.files_changed.slice(0, 20)
+        : [];
+    } else {
+      const responseText =
+        message.parts
+          ?.filter((p) => p.type === 'text')
+          .map((p) => p.text)
+          .filter(Boolean)
+          .join('\n') || '';
+      output = responseText;
+      const parsed = parseSubagentTextResponse(responseText);
+      status = parsed.status;
+      concerns = parsed.concerns;
+      filesChanged = parsed.filesChanged;
     }
-
-    const filesChanged = (() => {
-      const pathPattern =
-        /(?:^|\n)(?:[\w./\\-]+\.[a-zA-Z0-9]+|[\w.-]+(?:[\\/][\w.-]+)+(?:\.[a-zA-Z0-9]+)?|^[A-Za-z][\w-]+\.[\w-]+|^[A-Za-z][\w-]+(?:\.[\w-]+)*$(?!\.))/gm;
-      const matches = responseText.match(pathPattern);
-      return (matches || [])
-        .map((f) => f.trim())
-        .filter(
-          (f) =>
-            !f.startsWith('CONCERN:') &&
-            !f.startsWith('NEEDS_CONTEXT') &&
-            !f.startsWith('BLOCKED') &&
-            !/^\d+\.\s/.test(f),
-        )
-        .slice(0, 20);
-    })();
 
     // Track file changes + evidence
     if (filesChanged.length > 0) {
@@ -399,12 +453,16 @@ async function dispatchSubagent(
 export const RegentPlugin = async ({ client }) => {
   return {
     // Register skills path so OpenCode discovers regent skills
+    // Auto-discovery from .opencode/skills/ works regardless of config support
     /** @param {{ skills?: { paths?: string[] }, command?: Record<string, unknown>, agent?: Record<string, unknown> }} config */
     config: async (config) => {
       config.skills = config.skills || {};
-      config.skills.paths = config.skills.paths || [];
-      if (!config.skills.paths.includes(skillsDir)) {
-        config.skills.paths.push(skillsDir);
+      if (Array.isArray(config.skills.paths)) {
+        if (!config.skills.paths.includes(skillsDir)) {
+          config.skills.paths.push(skillsDir);
+        }
+      } else {
+        config.skills.paths = [skillsDir];
       }
 
       config.command = config.command || /** @type {Record<string, unknown>} */ ({});
@@ -422,6 +480,27 @@ export const RegentPlugin = async ({ client }) => {
       }
     },
 
+    // Cleanup on plugin unload
+    dispose: async () => {
+      toolCallHistory.length = 0;
+      evidenceLog = [];
+      sessionFileChanges.clear();
+    },
+
+    // Preserve regent state across session compactions
+    'experimental.session.compacting': async (_input, output) => {
+      const unverified = evidenceLog.filter((e) => !e.verified);
+      if (unverified.length > 0) {
+        output.context.push(`## Regent Evidence Log (unverified)\n${JSON.stringify(unverified)}\n`);
+      }
+      const activeChanges = [...sessionFileChanges.entries()]
+        .filter(([_, d]) => !d.verified)
+        .map(([sid, d]) => `${sid}: ${d.files.join(', ')}`);
+      if (activeChanges.length > 0) {
+        output.context.push(`## Regent Active File Changes\n${activeChanges.join('\n')}\n`);
+      }
+    },
+
     // Inject bootstrap into first user message
     'experimental.chat.messages.transform': async (_input, output) => {
       const bootstrap = getBootstrap();
@@ -430,13 +509,12 @@ export const RegentPlugin = async ({ client }) => {
       const firstUser = output.messages.find((m) => m.info?.role === 'user');
       if (!firstUser?.parts?.length) return;
 
-      // Guard: skip if any text part at any position already has the marker
-      const allText = output.messages
-        .flatMap((m) => m.parts || [])
+      // Guard: skip if first user message already has the marker
+      const firstUserText = (firstUser.parts || [])
         .filter((p) => p.type === 'text')
         .map((p) => p.text)
         .join('');
-      if (allText.includes('EXTREMELY_IMPORTANT')) return;
+      if (firstUserText.includes('EXTREMELY_IMPORTANT')) return;
 
       firstUser.text = firstUser.text || '';
       firstUser.parts.unshift({
@@ -445,7 +523,7 @@ export const RegentPlugin = async ({ client }) => {
       });
     },
 
-    // ── 5 Custom Tools ──────────────────────────────────────
+    // ── 6 Custom Tools ──────────────────────────────────────
     tool: {
       // 1. delegate — single subagent
       delegate: tool({
@@ -871,6 +949,10 @@ export const RegentPlugin = async ({ client }) => {
             ? evidenceLog.filter((e) => !e.verified).length
             : 0;
 
+          // Assess confidence: low when many unmet with sparse context
+          const implWords = args.implementation_context.split(/\s+/).length;
+          const lowConfidence = unmet.length > 0 && implWords < 20;
+
           return JSON.stringify({
             compliant: unmet.length === 0 && unverifiedCount === 0,
             requirements_met: met,
@@ -884,6 +966,13 @@ export const RegentPlugin = async ({ client }) => {
                   ? `${unverifiedCount} file change(s) not followed by verification command`
                   : null,
             },
+            confidence_assessment: lowConfidence
+              ? 'low — sparse implementation context may hide unverified requirements'
+              : 'adequate',
+            recommend_delegation:
+              unmet.length > 0
+                ? 'Consider delegating each unmet requirement to a subagent for detailed verification'
+                : null,
             summary: `${met.length}/${reqs.length} requirements met, ${extras.length} extras flagged, ${unverifiedCount} unverified changes`,
           });
         },

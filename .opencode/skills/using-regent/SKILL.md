@@ -32,6 +32,7 @@ Read `CONSTITUTION.md` at repo root. It defines:
 | `/tdd`         | tdd skill                            | Red-green-refactor cycle           |
 | `/diagnose`    | diagnose skill                       | Systematic debugging               |
 | `/verify`      | verification-before-completion skill | Evidence gate                      |
+| `/review`      | verification-before-completion skill | Code quality and spec review       |
 
 ## Red Flags
 

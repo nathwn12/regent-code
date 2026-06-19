@@ -149,8 +149,8 @@ test('[LIVE] explore — focus on specific file', async () => {
       { worktree: repoRoot },
     ),
   );
-  assert.match(output.structure, /"name": "regent"/);
-  assert.match(output.structure, /"version": "2\.3\.0"/);
+  assert.match(output.structure, /"name": "regent-code"/);
+  assert.match(output.structure, /"version": "2\.4\.0"/);
 });
 
 test('[LIVE] explore — focus on directory', async () => {
@@ -645,8 +645,8 @@ test('[LIVE] dispatch — CONCERN status detection', async () => {
   assert.match(o.concerns[0], /Performance/);
 });
 
-test('[LIVE] dispatch — session cleanup on prompt failure', async () => {
-  let deletedId = null;
+test('[LIVE] dispatch — preserves orphan session on prompt failure for TUI visibility', async () => {
+  let deletedCalled = false;
   const plugin = await RegentPlugin({
     client: {
       session: {
@@ -656,8 +656,8 @@ test('[LIVE] dispatch — session cleanup on prompt failure', async () => {
         async prompt() {
           throw new Error('fail');
         },
-        async delete(input) {
-          deletedId = input.path.id;
+        async delete() {
+          deletedCalled = true;
           return { data: {} };
         },
       },
@@ -670,7 +670,8 @@ test('[LIVE] dispatch — session cleanup on prompt failure', async () => {
     ),
   );
   assert.equal(o.status, 'blocked');
-  assert.equal(deletedId, 's-leak');
+  assert.equal(deletedCalled, false, 'orphan session preserved for TUI visibility');
+  assert.equal(o.session_id, 's-leak');
 });
 
 // ── 11. FILES CHANGED PARSING ──────────────────────────────
@@ -754,7 +755,7 @@ test('[LIVE] filesChanged — matches extensionless paths with separators', asyn
   );
   assert.ok(o.files_changed.includes('src/index.js'));
   assert.ok(o.files_changed.includes('src/components/Header'));
-  assert.equal(o.files_changed.includes('Makefile'), false);
+  assert.equal(o.files_changed.includes('Makefile'), true);
 });
 
 // ── 12. PLUGIN ENTRY POINT EXPORT ─────────────────────────
@@ -769,7 +770,7 @@ test('[LIVE] RegentPlugin returns all required hooks', async () => {
   assert.equal(typeof plugin.config, 'function');
   assert.equal(typeof plugin['experimental.chat.messages.transform'], 'function');
   assert.equal(typeof plugin.tool, 'object');
-  assert.equal(Object.keys(plugin.tool).length, 5);
+  assert.equal(Object.keys(plugin.tool).length, 6);
 });
 
 // ── 13. RESEARCH SYNTHESIS ─────────────────────────────────

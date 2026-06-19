@@ -10,11 +10,11 @@ npm install
 node --test plugins/regent.test.js
 ```
 
-All 23 tests must pass before committing.
+All 23 unit tests + 52 live tests must pass before committing.
 
 ## Development
 
-- **Plugin entry:** `.opencode/plugins/regent.js` — registers 6 custom tools, 7 slash commands, 2 subagents, and bootstrap injection
+- **Plugin entry:** `.opencode/plugins/regent.js` — registers 6 custom tools, 7 slash commands (orchestrate, delegate, research, tdd, diagnose, verify, review), 2 subagents, and bootstrap injection
 - **Skills:** `.opencode/skills/<name>/SKILL.md` with frontmatter (`name:`, `description:`)
 - **Commands:** `.opencode/commands/<name>.md` with frontmatter (`description:`, `subtask:`, `agent:`)
 - **Agents:** `.opencode/agents/<name>.md` with frontmatter (`description:`, `mode:`, `color:`)
@@ -30,7 +30,7 @@ All 23 tests must pass before committing.
 ## Verdict gates
 
 Before committing:
-1. Run `npm run verify` — format, lint, typecheck, all 23 tests pass
+1. Run `npm run verify` — format, lint, typecheck, all unit tests pass
 2. Read `CONSTITUTION.md` — ensure changes align with identity and iron laws
 3. Add new skill? Update `README.md` skill table. Add new tool or command? Update tool/command tables.
 4. Adding features? Update project-level state in regent.js (sessionFileChanges, evidenceLog, toolCallHistory).
