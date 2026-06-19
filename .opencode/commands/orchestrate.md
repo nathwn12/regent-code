@@ -1,5 +1,5 @@
 ---
-description: Run the AutoPowers pipeline — clarify, plan, execute, verify, report
+description: Run the regent-code pipeline — clarify, plan, execute, verify, report
 subtask: true
 agent: regent-general
 ---

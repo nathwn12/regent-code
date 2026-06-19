@@ -24,7 +24,7 @@ Requires an OpenCode version that supports git plugin specs. If plugin loading f
 
 ## Verify
 
-Start a new session. The AutoPowers bootstrap injects automatically. Run `/orchestrate` to test.
+Start a new session. The regent-code bootstrap injects automatically. Run `/orchestrate` to test.
 
 ## Troubleshooting
 

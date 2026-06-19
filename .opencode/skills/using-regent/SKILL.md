@@ -1,6 +1,6 @@
 ---
 name: using-regent
-description: Regent bootstrap instructions for AutoPowers; use when explaining or debugging Regent orchestration behavior.
+description: Regent bootstrap instructions for regent-code; use when explaining or debugging Regent orchestration behavior.
 ---
 
 # Regent Bootstrap
