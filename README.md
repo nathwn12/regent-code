@@ -8,9 +8,10 @@ Agent orchestration for OpenCode. From idea to shipped — zero ceremony.
 
 - **Court governance** — Six AI specialists (Strategist, Architect, Fleet Commander, Inspector, Publisher, Mentor), each with defined persona, values, and iron laws. Every session starts with a Constitution — the single source of truth for how the court operates.
 - **Structured pipeline** — Clarify, plan, execute, verify, report. Every phase gated. No phase skip. No gate bypass. Every claim backed by fresh evidence.
-- **5 custom tools** — `delegate`, `delegate_many`, `research`, `explore`, `verify` for subagent orchestration and codebase analysis.
-- **7 skills** — TDD, systematic debugging, evidence-gated verification, disposable prototyping, codebase orientation, and more.
-- **6 slash commands** — `/orchestrate`, `/delegate`, `/research`, `/tdd`, `/diagnose`, `/verify`.
+- **6 custom tools** — `delegate`, `delegate_many`, `research`, `explore`, `verify`, `changed-files` for subagent orchestration, codebase analysis, and file change tracking.
+- **6 skills** — TDD, systematic debugging, evidence-gated verification, disposable prototyping, codebase orientation, and more.
+- **7 slash commands** — `/orchestrate`, `/delegate`, `/research`, `/tdd`, `/diagnose`, `/verify`, `/review`.
+- **Parallel visibility** — Subagent sessions persist as navigable TUI child sessions with toast notifications for start/complete/error.
 - **Zero ceremony** — One entry in your OpenCode config. No manual install. Bootstraps on first message.
 
 ---
@@ -75,25 +76,26 @@ From here: approve, adjust, or loop back to a new goal.
 
 ### Custom tools
 
-| Tool            | Purpose                                     |
-| --------------- | ------------------------------------------- |
-| `delegate`      | Single focused subagent task                |
-| `delegate_many` | Parallel subagents via Promise.all          |
-| `research`      | Parallel research across multiple questions |
-| `explore`       | Codebase structure analysis                 |
-| `verify`        | Requirements compliance checking            |
+| Tool            | Purpose                                                       |
+| --------------- | ------------------------------------------------------------- |
+| `delegate`      | Single focused subagent task                                 |
+| `delegate_many` | Parallel subagents with work-stealing (max 10 workers)        |
+| `research`      | Parallel research with cross-question theme synthesis         |
+| `explore`       | Codebase structure analysis (falls back to `process.cwd()`)  |
+| `verify`        | Requirements compliance + evidence gate check                 |
+| `changed-files` | View files changed by subagent dispatches in current session |
 
 ### Skills
 
-| Skill                            | Court role      | Iron law                       |
-| -------------------------------- | --------------- | ------------------------------ |
-| `orchestrator`                   | Concierge       | No gate bypass                 |
-| `tdd`                            | Fleet Commander | No code without failing test   |
-| `diagnose`                       | Inspector       | No fix without root cause      |
-| `verification-before-completion` | Inspector       | No completion without evidence |
-| `prototype`                      | Fleet Commander | Disposable by design           |
-| `zoom-out`                       | Mentor          | Start broad, then narrow       |
-| `using-regent`                   | All             | Bootstrap identity             |
+| Skill                            | Court role      | Iron law                                            |
+| -------------------------------- | --------------- | --------------------------------------------------- |
+| `orchestrator`                   | Concierge       | No gate bypass + stagnation detection               |
+| `tdd`                            | Fleet Commander | No code without failing test                        |
+| `diagnose`                       | Inspector       | No fix without root cause                           |
+| `verification-before-completion` | Inspector       | No completion without evidence                      |
+| `prototype`                      | Fleet Commander | Disposable by design                                |
+| `zoom-out`                       | Mentor          | Start broad, then narrow                            |
+| `using-regent`                   | All             | Bootstrap identity                                  |
 
 ### Subagents
 
@@ -104,14 +106,15 @@ From here: approve, adjust, or loop back to a new goal.
 
 ### Slash commands
 
-| Command        | Routes to                            | Purpose                            |
-| -------------- | ------------------------------------ | ---------------------------------- |
-| `/orchestrate` | orchestrator skill                   | Full pipeline from goal to shipped |
-| `/delegate`    | delegate tool                        | Single subagent task               |
-| `/research`    | research tool                        | Parallel research                  |
-| `/tdd`         | tdd skill                            | Red-green-refactor cycle           |
-| `/diagnose`    | diagnose skill                       | Systematic debugging               |
-| `/verify`      | verification-before-completion skill | Evidence gate                      |
+| Command        | Routes to                            | Purpose                                  |
+| -------------- | ------------------------------------ | ---------------------------------------- |
+| `/orchestrate` | orchestrator skill                   | Full pipeline from goal to shipped       |
+| `/delegate`    | delegate tool                        | Single subagent task                     |
+| `/research`    | research tool                        | Parallel research with cross-synthesis   |
+| `/tdd`         | tdd skill                            | Red-green-refactor cycle                 |
+| `/diagnose`    | diagnose skill                       | Systematic debugging                     |
+| `/verify`      | verification-before-completion skill | Evidence gate with change tracking       |
+| `/review`      | Inspector role                       | Code quality, security, correctness review |
 
 ---
 
@@ -120,13 +123,14 @@ From here: approve, adjust, or loop back to a new goal.
 ```
 regent/
 ├── .opencode/                   # Plugin
-│   ├── plugins/regent.js        # Entry — 5 tools, config, bootstrap
-│   ├── plugins/regent.test.js   # 23+ tests
-│   ├── commands/                # 6 slash commands
+│   ├── plugins/regent.js        # Entry — 6 tools, config, bootstrap
+│   ├── plugins/regent.test.js   # 23 tests
+│   ├── plugins/regent.live-test.js
+│   ├── commands/                # 7 slash commands
 │   ├── agents/                  # 2 subagents
 │   └── package.json
-├── .opencode/skills/            # 7 skills
-│   ├── orchestrator/            # 5-phase pipeline
+├── .opencode/skills/            # 6 skills
+│   ├── orchestrator/            # 5-phase pipeline + stagnation detection
 │   ├── tdd/                     # Red-green-refactor
 │   ├── diagnose/                # Systematic debugging
 │   ├── verification-before-completion/

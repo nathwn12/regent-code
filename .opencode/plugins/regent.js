@@ -20,6 +20,67 @@ try {
   /* version non-critical */
 }
 
+// ── State ──
+const sessionFileChanges = new Map();
+const toolCallHistory = [];
+let evidenceLog = [];
+
+// ── Typed recovery actions ──
+const RecoveryAction = { RETRY: 'retry', ABORT: 'abort', SKIP: 'skip', ESCALATE: 'escalate' };
+
+function classifyError(err) {
+  const msg = (err?.message || String(err)).toLowerCase();
+  if (msg.includes('timeout') || msg.includes('rate limit') || msg.includes('too many'))
+    return RecoveryAction.RETRY;
+  if (
+    msg.includes('not found') ||
+    msg.includes('missing') ||
+    msg.includes('invalid') ||
+    msg.includes('enoent')
+  )
+    return RecoveryAction.ABORT;
+  if (msg.includes('permission') || msg.includes('denied') || msg.includes('unauthorized'))
+    return RecoveryAction.ESCALATE;
+  return RecoveryAction.RETRY;
+}
+
+// ── Circuit breaker ──
+function checkCircuitBreaker(toolName) {
+  toolCallHistory.push({ tool: toolName, time: Date.now() });
+  while (toolCallHistory.length > 10) toolCallHistory.shift();
+  if (toolCallHistory.length >= 3) {
+    const last3 = toolCallHistory.slice(-3);
+    if (last3.every((c) => c.tool === toolName)) return true;
+  }
+  return false;
+}
+
+// ── Evidence tracking ──
+function recordEvidence(sessionId, files) {
+  if (files.length > 0) {
+    evidenceLog.push({ sessionId, files, timestamp: Date.now(), verified: false });
+  }
+}
+function markEvidenceVerified(sessionId) {
+  for (const entry of evidenceLog) {
+    if (entry.sessionId === sessionId) entry.verified = true;
+  }
+}
+function hasUnverifiedChanges() {
+  return evidenceLog.some((e) => !e.verified);
+}
+
+// ── Toast helper ──
+async function showToast(client, message, variant = 'info') {
+  try {
+    if (client?.tui?.showToast) {
+      await client.tui.showToast({ body: { message, variant } });
+    }
+  } catch {
+    /* toast non-critical */
+  }
+}
+
 /** @typedef {Record<string, string | boolean>} Frontmatter */
 /** @typedef {{ name: string, frontmatter: Frontmatter, body: string }} MdAsset */
 
@@ -179,25 +240,59 @@ Regent v${regentVersion}
   return bootstrapCache;
 };
 
+// ── Retry with exponential backoff ──
+async function withRetry(fn, maxRetries = 2) {
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const action = classifyError(err);
+      if (action === RecoveryAction.ABORT || action === RecoveryAction.SKIP) throw err;
+      if (attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 4000);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
 // ── Shared subagent dispatch ─────────────────────────────────
 /**
- * @param {{ session: { create: Function, prompt: Function, delete: Function } }} client
+ * @param {{ session: { create: Function, prompt: Function, delete: Function }, tui?: { showToast?: Function } }} client
  * @param {string} task
  * @param {string} context
  * @param {string} expectedOutput
  * @param {{ directory?: string, worktree?: string }} [toolContext]
- * @returns {Promise<{ status: string, output: string, concerns: string[], files_changed: string[] }>}
+ * @param {string} [taskId]
+ * @returns {Promise<{ status: string, output: string, concerns: string[], files_changed: string[], session_id?: string }>}
  */
-async function dispatchSubagent(client, task, context, expectedOutput, toolContext = {}) {
+async function dispatchSubagent(
+  client,
+  task,
+  context,
+  expectedOutput,
+  toolContext = {},
+  taskId = '',
+) {
+  const label = taskId || 'agent';
   let session;
   try {
-    const sessionResult = await client.session.create({
-      ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
-      body: {
-        title: `regent v${regentVersion}: ${task.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 50)}`,
-      },
-    });
+    const title = taskId
+      ? `regent [${taskId}]: ${task.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 40)}`
+      : `regent v${regentVersion}: ${task.replace(/[^a-zA-Z0-9 ]/g, '').slice(0, 50)}`;
+
+    const sessionResult = await withRetry(() =>
+      client.session.create({
+        ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
+        body: { title },
+      }),
+    );
     session = sessionResult.data ?? sessionResult;
+
+    await showToast(client, `↻ ${label}: started`, 'info');
 
     const prompt = [
       `## Task`,
@@ -218,14 +313,16 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
       `If you cannot complete the task, say BLOCKED and explain why.`,
     ].join('\n');
 
-    const result = await client.session.prompt({
-      path: { id: session.id },
-      ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
-      body: {
-        agent: 'regent-general',
-        parts: [{ type: 'text', text: prompt }],
-      },
-    });
+    const result = await withRetry(() =>
+      client.session.prompt({
+        path: { id: session.id },
+        ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
+        body: {
+          agent: 'regent-general',
+          parts: [{ type: 'text', text: prompt }],
+        },
+      }),
+    );
     const message = result.data ?? result;
 
     const responseText =
@@ -251,7 +348,7 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
 
     const filesChanged = (() => {
       const pathPattern =
-        /(?:^|\n)(?:[\w./\\-]+\.[a-zA-Z0-9]+|[\w.-]+(?:[\\/][\w.-]+)+(?:\.[a-zA-Z0-9]+)?)/gm;
+        /(?:^|\n)(?:[\w./\\-]+\.[a-zA-Z0-9]+|[\w.-]+(?:[\\/][\w.-]+)+(?:\.[a-zA-Z0-9]+)?|^[A-Za-z][\w-]+\.[\w-]+|^[A-Za-z][\w-]+(?:\.[\w-]+)*$(?!\.))/gm;
       const matches = responseText.match(pathPattern);
       return (matches || [])
         .map((f) => f.trim())
@@ -265,26 +362,36 @@ async function dispatchSubagent(client, task, context, expectedOutput, toolConte
         .slice(0, 20);
     })();
 
-    return { status, output, concerns, files_changed: filesChanged };
+    // Track file changes + evidence
+    if (filesChanged.length > 0) {
+      sessionFileChanges.set(session.id, {
+        taskId,
+        files: filesChanged,
+        timestamp: Date.now(),
+        verified: false,
+      });
+      recordEvidence(session.id, filesChanged);
+    }
+
+    await showToast(
+      client,
+      `${status === 'done' ? '✓' : '⚠'} ${label}: ${status}`,
+      status === 'done' ? 'success' : 'warning',
+    );
+
+    // Session is NOT deleted — remains as visible child session in TUI tree
+    return { status, output, concerns, files_changed: filesChanged, session_id: session.id };
   } catch (err) {
+    await showToast(client, `✗ ${label}: error`, 'error');
     return {
       status: 'blocked',
       output: `Subagent error: ${err instanceof Error ? err.message : String(err)}`,
       concerns: [],
       files_changed: [],
+      session_id: session?.id,
     };
-  } finally {
-    if (session?.id) {
-      try {
-        await client.session.delete({
-          path: { id: session.id },
-          ...(toolContext.directory ? { query: { directory: toolContext.directory } } : {}),
-        });
-      } catch {
-        /* cleanup failure is non-fatal */
-      }
-    }
   }
+  // No finally block — sessions persist as visible TUI children
 }
 
 // ── Plugin export ────────────────────────────────────────────
@@ -365,10 +472,10 @@ export const RegentPlugin = async ({ client }) => {
         },
       }),
 
-      // 2. delegate_many — parallel multi-subagent
+      // 2. delegate_many — parallel multi-subagent with work-stealing
       delegate_many: tool({
         description:
-          'Dispatch multiple independent tasks to subagents in PARALLEL. All tasks run simultaneously via Promise.all. Use for tasks that have no dependencies on each other.',
+          'Dispatch multiple independent tasks to subagents in PARALLEL. All tasks run simultaneously via Promise.all with work-stealing. Use for tasks that have no dependencies on each other.',
         args: {
           tasks: tool.schema
             .array(
@@ -384,18 +491,51 @@ export const RegentPlugin = async ({ client }) => {
             .describe('Array of independent tasks to run in parallel'),
         },
         async execute(args, context) {
-          const results = await Promise.all(
-            args.tasks.map(async (t) => {
+          // Circuit breaker check
+          if (checkCircuitBreaker('delegate_many')) {
+            return JSON.stringify({
+              results: [],
+              summary: { total: 0, completed: 0, failed: 1, needs_context: 0 },
+              _circuit_open: true,
+              _warning:
+                'Circuit breaker tripped: delegate_many called 3+ times consecutively. Escalate to Inspector.',
+            });
+          }
+
+          // Work-stealing: convert to shared queue
+          const queue = [...args.tasks];
+          const results = [];
+
+          async function worker() {
+            while (queue.length > 0) {
+              const t = queue.shift();
+              if (!t) break;
+              // Check circuit breaker per-task
+              if (checkCircuitBreaker('subagent_dispatch')) {
+                results.push({
+                  id: t.id,
+                  status: 'blocked',
+                  output: 'Circuit breaker open: too many subagent dispatches',
+                  concerns: ['Circuit breaker tripped'],
+                  files_changed: [],
+                });
+                continue;
+              }
               const result = await dispatchSubagent(
                 client,
                 t.task,
                 t.context,
                 t.expected_output,
                 context,
+                t.id,
               );
-              return { id: t.id, ...result };
-            }),
-          );
+              results.push({ id: t.id, ...result });
+            }
+          }
+
+          const workerCount = Math.min(queue.length, 10);
+          const workers_arr = Array.from({ length: workerCount }, () => worker());
+          await Promise.all(workers_arr);
 
           return JSON.stringify({
             results,
@@ -411,7 +551,7 @@ export const RegentPlugin = async ({ client }) => {
         },
       }),
 
-      // 3. research — parallel research
+      // 3. research — parallel research with cross-synthesis
       research: tool({
         description:
           'Research multiple questions in parallel by dispatching independent research subagents. Each question gets a focused agent. Returns combined findings with synthesis.',
@@ -439,6 +579,7 @@ export const RegentPlugin = async ({ client }) => {
                 taskContext,
                 'Key findings, data points, sources, and recommendations',
                 context,
+                q.id,
               );
               return { id: q.id, question: q.question, ...result };
             }),
@@ -450,16 +591,42 @@ export const RegentPlugin = async ({ client }) => {
           const blocked = results.filter((r) => r.status === 'blocked');
           const needsContext = results.filter((r) => r.status === 'needs_context');
 
+          // Cross-question synthesis: find common themes and contradictions
+          const allOutputs = completed.map((r) => r.output || '');
+          const commonThemes = [];
+          if (allOutputs.length >= 2) {
+            const words = {};
+            for (const output of allOutputs) {
+              const seen = new Set();
+              for (const w of output
+                .toLowerCase()
+                .split(/\s+/)
+                .filter((w) => w.length > 5)) {
+                if (!seen.has(w)) {
+                  seen.add(w);
+                  words[w] = (words[w] || 0) + 1;
+                }
+              }
+            }
+            for (const [word, count] of Object.entries(words)) {
+              if (count >= Math.ceil(allOutputs.length / 2)) {
+                commonThemes.push(word);
+              }
+            }
+          }
+
           const summaryParts = [];
-          const findingsList = completed.map((r) => r.question);
-          if (findingsList.length > 0) {
-            summaryParts.push(`Addressed: ${findingsList.join(', ')}`);
+          if (completed.length > 0) {
+            summaryParts.push(`Addressed: ${completed.map((r) => r.question).join(', ')}`);
           }
           if (blocked.length > 0) {
             summaryParts.push(`Blocked: ${blocked.map((r) => r.question).join(', ')}`);
           }
           if (needsContext.length > 0) {
             summaryParts.push(`Needs context: ${needsContext.map((r) => r.question).join(', ')}`);
+          }
+          if (commonThemes.length > 0) {
+            summaryParts.push(`Common themes: ${commonThemes.slice(0, 10).join(', ')}`);
           }
 
           return JSON.stringify({
@@ -488,7 +655,7 @@ export const RegentPlugin = async ({ client }) => {
             .describe('Optional narrowing: directory path, file pattern, or topic'),
         },
         async execute(args, context) {
-          const worktree = context?.directory || context?.worktree || '';
+          const worktree = context?.directory || context?.worktree || process.cwd();
           if (!worktree) {
             return JSON.stringify({
               structure:
@@ -566,10 +733,33 @@ export const RegentPlugin = async ({ client }) => {
         },
       }),
 
-      // 5. verify — compliance check
+      // 5. changed-files — view session-scoped file change tree
+      'changed-files': tool({
+        description:
+          'View files changed by subagent dispatches in this session. Returns navigable tree of what each subagent touched.',
+        args: {
+          session_id: tool.schema.string().optional().describe('Filter by session ID'),
+          task_id: tool.schema.string().optional().describe('Filter by task ID'),
+        },
+        async execute(args) {
+          const entries = [];
+          for (const [sid, data] of sessionFileChanges) {
+            if (args.session_id && sid !== args.session_id) continue;
+            if (args.task_id && data.taskId !== args.task_id) continue;
+            entries.push({ session_id: sid, ...data });
+          }
+          return JSON.stringify({
+            entries,
+            total: entries.length,
+            unverified: entries.filter((e) => !e.verified).length,
+          });
+        },
+      }),
+
+      // 6. verify — compliance check with evidence tracking
       verify: tool({
         description:
-          'Compare implementation against requirements. Returns structured pass/fail per requirement, flags extras (YAGNI). Use after execution to check if work meets the plan.',
+          'Compare implementation against requirements. Returns structured pass/fail per requirement, flags extras (YAGNI). Includes evidence gate: reports unverified file changes. Use after execution to check if work meets the plan.',
         args: {
           requirements: tool.schema
             .string()
@@ -577,6 +767,10 @@ export const RegentPlugin = async ({ client }) => {
           implementation_context: tool.schema
             .string()
             .describe('What was built: file list, summary of changes, or diff'),
+          session_id: tool.schema
+            .string()
+            .optional()
+            .describe('Session ID to mark evidence as verified on completion'),
         },
         async execute(args) {
           if (!args || args.requirements == null || args.implementation_context == null) {
@@ -585,6 +779,11 @@ export const RegentPlugin = async ({ client }) => {
               requirements_met: [],
               requirements_unmet: [],
               extras_built: [],
+              evidence_gate: {
+                unverified_changes: hasUnverifiedChanges()
+                  ? evidenceLog.filter((e) => !e.verified).length
+                  : 0,
+              },
               summary:
                 'Missing required arguments: provide "requirements" and "implementation_context"',
             });
@@ -617,10 +816,13 @@ export const RegentPlugin = async ({ client }) => {
               .replace(/^[-*\d+.]\s+/, '')
               .trim();
 
+          // Support checklist format: category headers with - [x] items
           const reqs = args.requirements
             .split('\n')
             .map((r) => stripCheckbox(r))
-            .filter((r) => r.length > 2 && !r.startsWith('#') && !r.startsWith('```'));
+            .filter(
+              (r) => r.length > 2 && !r.startsWith('#') && !r.startsWith('```') && !r.endsWith(':'),
+            );
 
           const impl = args.implementation_context.toLowerCase();
 
@@ -660,12 +862,29 @@ export const RegentPlugin = async ({ client }) => {
             });
           });
 
+          // Mark evidence as verified if session_id provided
+          if (args.session_id) {
+            markEvidenceVerified(args.session_id);
+          }
+
+          const unverifiedCount = hasUnverifiedChanges()
+            ? evidenceLog.filter((e) => !e.verified).length
+            : 0;
+
           return JSON.stringify({
-            compliant: unmet.length === 0,
+            compliant: unmet.length === 0 && unverifiedCount === 0,
             requirements_met: met,
             requirements_unmet: unmet,
             extras_built: extras,
-            summary: `${met.length}/${reqs.length} requirements met, ${extras.length} extras flagged`,
+            evidence_gate: {
+              unverified_changes: unverifiedCount,
+              total_changes: evidenceLog.length,
+              warning:
+                unverifiedCount > 0
+                  ? `${unverifiedCount} file change(s) not followed by verification command`
+                  : null,
+            },
+            summary: `${met.length}/${reqs.length} requirements met, ${extras.length} extras flagged, ${unverifiedCount} unverified changes`,
           });
         },
       }),

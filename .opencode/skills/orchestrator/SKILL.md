@@ -120,6 +120,14 @@ Partial failure:
 - **Non-critical:** Note, continue.
 - **Critical:** Retry once. Fail again → PAUSE, escalate.
 
+**Stagnation detection (DECOMPOSE → RE-PLAN → ASK).** If a task shows no progress after 3 delegate attempts:
+1. **DECOMPOSE** — break the task into smaller pieces
+2. **RE-PLAN** — reassess the approach and file scope
+3. **ASK** — present options to the user with recommendation
+Do not keep retrying the same approach. Blind persistence after stagnation is waste.
+
+**Evidence tracking.** Every `delegate()` call records files changed. When execution completes, use the `changed-files` tool to verify what was touched before passing to Inspector. If files changed without a verification step, the evidence gate flags it.
+
 **Gate:** All tasks resolve before Phase 4.
 
 ### Phase 4 — Verify (Inspector 监官)
@@ -128,12 +136,17 @@ Call `verify()` with:
 
 - `requirements` = captured during Clarify
 - `implementation_context` = summary from Phase 3
+- `session_id` = optional, marks evidence as verified
+
+Use checklist format for requirements (category headers with `- [x]` items). The verify tool supports this natively.
 
 Decision:
 
 - **Compliant** → Phase 5
 - **Minor issues** → fix, re-verify
 - **Major issues** → PAUSE, escalate
+
+**Evidence gate check.** Run `changed-files()` to see what subagents touched. If any changes are unverified, they appear in `verify()` output's `evidence_gate.warning`. Do not proceed to Phase 5 with unverified changes.
 
 Delegate verifiers per requirement if scope large. Fresh command output or repro evidence required before Phase 5.
 

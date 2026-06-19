@@ -187,11 +187,11 @@ test('[LIVE] explore — blocks directory traversal', async () => {
   assert.match(output.structure, /outside project directory/);
 });
 
-test('[LIVE] explore — no context returns error', async () => {
+test('[LIVE] explore — no context falls back to process.cwd', async () => {
   const plugin = await RegentPlugin({ client: {} });
   const output = JSON.parse(await plugin.tool.explore.execute({ query: 'test' }));
-  assert.match(output.structure, /Error/);
-  assert.match(output.summary, /context/);
+  assert.ok(output.structure, 'should return structure from process.cwd() fallback');
+  assert.doesNotMatch(output.structure, /Error/);
 });
 
 test('[LIVE] explore — uses context.directory fallback', async () => {
@@ -474,7 +474,7 @@ test('[LIVE] all 6 command files exist with valid frontmatter', () => {
 });
 
 test('[LIVE] both agent files exist', () => {
-  const aDir = path.join(__dirname, '../agent');
+  const aDir = path.join(__dirname, '../agents');
   for (const name of ['regent-general', 'regent-explore']) {
     const aPath = path.join(aDir, `${name}.md`);
     assert.ok(fs.existsSync(aPath), `Missing agent: ${name}`);

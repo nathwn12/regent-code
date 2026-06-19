@@ -112,7 +112,7 @@ test('delegate handles wrapped SDK responses', async () => {
   assert.equal(output.status, 'done');
   assert.match(output.output, /Completed task/);
   assert.equal(calls[1][1].path.id, 'session-1');
-  assert.equal(calls[2][1].path.id, 'session-1');
+  assert.ok(output.session_id, 'should return session_id');
 });
 
 test('explore uses OpenCode worktree context when provided', async () => {
@@ -396,18 +396,17 @@ test('explore handles missing focus path', async () => {
   assert.match(output.structure, /path not found/);
 });
 
-test('explore returns error when no context provided (Bug: process.cwd fallback)', async () => {
+test('explore falls back to process.cwd when no worktree context', async () => {
   const plugin = await RegentPlugin({ client: {} });
 
   const output = JSON.parse(
     await plugin.tool.explore.execute({
-      query: 'test',
+      query: 'project root',
     }),
   );
 
-  assert.match(output.structure, /Error/);
-  assert.match(output.structure, /context/);
-  assert.match(output.summary, /context/);
+  assert.ok(output.structure, 'should return structure from process.cwd() fallback');
+  assert.doesNotMatch(output.structure, /Error/);
 });
 
 test('transform returns early when no user messages', async () => {
@@ -437,20 +436,20 @@ test('verify returns structured error on missing args', async () => {
   assert.match(partial.summary, /Missing required arguments/);
 });
 
-test('dispatchSubagent cleans up session when prompt throws', async () => {
-  let deletedId = null;
+test('dispatchSubagent preserves session on prompt failure', async () => {
+  let createdSessionId = null;
   const plugin = await RegentPlugin({
     client: {
       session: {
         async create() {
-          return { data: { id: 's-leak-test' } };
+          createdSessionId = 's-leak-test';
+          return { data: { id: createdSessionId } };
         },
         async prompt() {
           throw new Error('Simulated prompt failure');
         },
-        async delete(input) {
-          deletedId = input.path.id;
-          return { data: {} };
+        async delete() {
+          throw new Error('delete should not be called');
         },
       },
     },
@@ -464,7 +463,7 @@ test('dispatchSubagent cleans up session when prompt throws', async () => {
   );
 
   assert.equal(output.status, 'blocked');
-  assert.equal(deletedId, 's-leak-test', 'session must be deleted even after prompt failure');
+  assert.equal(output.session_id, 's-leak-test', 'session should be preserved for visibility');
 });
 
 test('explore blocks path traversal outside worktree', async () => {
@@ -608,5 +607,9 @@ test('filesChanged regex matches extensionless paths with separators', async () 
     output.files_changed.includes('src/components/Header'),
     'should match extensionless path with separator',
   );
-  assert.equal(output.files_changed.length, 2);
+  assert.ok(
+    output.files_changed.includes('Makefile'),
+    'should match extensionless single-segment files',
+  );
+  assert.equal(output.files_changed.length, 3);
 });
