@@ -5,7 +5,7 @@
 ```jsonc
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["regent-code@git+https://github.com/nathwn12/regent-code.git#v2.3.1"],
+  "plugin": ["regent-code@git+https://github.com/nathwn12/regent-code.git#v2.4.0"],
 }
 ```
 
