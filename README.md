@@ -123,9 +123,9 @@ regent/
 │   ├── plugins/regent.js        # Entry — 5 tools, config, bootstrap
 │   ├── plugins/regent.test.js   # 23+ tests
 │   ├── commands/                # 6 slash commands
-│   ├── agent/                   # 2 subagents
+│   ├── agents/                  # 2 subagents
 │   └── package.json
-├── skills/                      # 7 skills
+├── .opencode/skills/            # 7 skills
 │   ├── orchestrator/            # 5-phase pipeline
 │   ├── tdd/                     # Red-green-refactor
 │   ├── diagnose/                # Systematic debugging

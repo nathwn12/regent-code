@@ -150,14 +150,14 @@ test('[LIVE] explore — focus on specific file', async () => {
     ),
   );
   assert.match(output.structure, /"name": "regent"/);
-  assert.match(output.structure, /"version": "2\.2\.2"/);
+  assert.match(output.structure, /"version": "2\.3\.0"/);
 });
 
 test('[LIVE] explore — focus on directory', async () => {
   const plugin = await RegentPlugin({ client: {} });
   const output = JSON.parse(
     await plugin.tool.explore.execute(
-      { query: 'skills list', focus: 'skills' },
+      { query: 'skills list', focus: '.opencode\\skills' },
       { worktree: repoRoot },
     ),
   );
@@ -251,7 +251,7 @@ test('[LIVE] explore — focus path exactly equals worktree root', async () => {
 test('[LIVE] explore — focus path with trailing slash', async () => {
   const plugin = await RegentPlugin({ client: {} });
   const output = JSON.parse(
-    await plugin.tool.explore.execute({ query: 'test', focus: 'skills\\' }, { worktree: repoRoot }),
+    await plugin.tool.explore.execute({ query: 'test', focus: '.opencode\\skills\\' }, { worktree: repoRoot }),
   );
   assert.match(output.structure, /orchestrator/);
 });
@@ -422,7 +422,7 @@ test('[LIVE] bootstrap — prepends not appends', async () => {
 // ── 5. SKILL FILES VALIDATION ──────────────────────────────
 
 test('[LIVE] all skill directories have valid SKILL.md with frontmatter', () => {
-  const skillsDir = path.join(repoRoot, 'skills');
+  const skillsDir = path.join(repoRoot, '.opencode', 'skills');
   const entries = fs.readdirSync(skillsDir, { withFileTypes: true }).filter((e) => e.isDirectory());
   assert.ok(entries.length >= 7);
   for (const entry of entries) {

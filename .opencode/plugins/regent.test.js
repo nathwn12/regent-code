@@ -15,7 +15,7 @@ test('config registers bundled Regent assets for OpenCode discovery', async () =
 
   await plugin.config(config);
 
-  assert.ok(config.skills?.paths?.some((p) => p.endsWith('skills')));
+  assert.ok(config.skills?.paths?.some((p) => p.includes(path.join('.opencode', 'skills'))));
 
   for (const name of ['orchestrate', 'delegate', 'research', 'tdd', 'diagnose', 'verify']) {
     assert.equal(typeof config.command?.[name]?.description, 'string');
@@ -50,7 +50,7 @@ test('config preserves user-defined commands and agents', async () => {
 });
 
 test('bundled Regent skills have OpenCode-discoverable frontmatter', () => {
-  const skillsDir = path.join(repoRoot, 'skills');
+  const skillsDir = path.join(repoRoot, '.opencode', 'skills');
   const entries = fs
     .readdirSync(skillsDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory());

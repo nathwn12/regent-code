@@ -5,9 +5,9 @@ import { tool } from '@opencode-ai/plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
-const skillsDir = path.resolve(rootDir, 'skills');
+const skillsDir = path.resolve(rootDir, '.opencode', 'skills');
 const commandsDir = path.resolve(__dirname, '../commands');
-const agentsDir = path.resolve(__dirname, '../agent');
+const agentsDir = path.resolve(__dirname, '../agents');
 
 let regentVersion = 'unknown';
 try {
@@ -161,11 +161,19 @@ const getBootstrap = () => {
 
   const content = extractContent(fs.readFileSync(skillPath, 'utf8'));
 
+  let constitutionText = '';
+  const constitutionPath = path.join(rootDir, 'CONSTITUTION.md');
+  if (fs.existsSync(constitutionPath)) {
+    constitutionText = fs.readFileSync(constitutionPath, 'utf8');
+  }
+
   bootstrapCache = `<EXTREMELY_IMPORTANT>
 ${content}
 
+${constitutionText}
+
 ## Regent Version
-Regent v${regentVersion} — See CONSTITUTION.md at repo root for full identity and court roles.
+Regent v${regentVersion}
 </EXTREMELY_IMPORTANT>`;
 
   return bootstrapCache;

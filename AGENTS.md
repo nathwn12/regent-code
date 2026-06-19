@@ -15,9 +15,9 @@ All 22+ tests must pass before committing.
 ## Development
 
 - **Plugin entry:** `.opencode/plugins/regent.js` — registers 5 custom tools, 6 slash commands, 2 subagents, and bootstrap injection
-- **Skills:** `skills/<name>/SKILL.md` with frontmatter (`name:`, `description:`)
+- **Skills:** `.opencode/skills/<name>/SKILL.md` with frontmatter (`name:`, `description:`)
 - **Commands:** `.opencode/commands/<name>.md` with frontmatter (`description:`, `subtask:`, `agent:`)
-- **Agents:** `.opencode/agent/<name>.md` with frontmatter (`description:`, `mode:`, `color:`)
+- **Agents:** `.opencode/agents/<name>.md` with frontmatter (`description:`, `mode:`, `color:`)
 - **Tests:** `.opencode/plugins/regent.test.js` — run with `node --test`
 
 ## Code style

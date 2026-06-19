@@ -35,7 +35,7 @@ Start a new session. The AutoPowers bootstrap injects automatically. Run `/orche
 
 **Skills not found:**
 
-- Verify the plugin installed correctly — check `~/.cache/opencode/packages/regent-code@git+https_*/node_modules/regent-code/skills/`
+- Verify the plugin installed correctly — check `~/.cache/opencode/packages/regent-code@git+https_*/node_modules/regent-code/.opencode/skills/`
 
 **Orchestrator not auto-triggering:**
 
